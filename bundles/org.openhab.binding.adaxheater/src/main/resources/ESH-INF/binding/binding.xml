@@ -4,7 +4,7 @@
 	xsi:schemaLocation="https://openhab.org/schemas/binding/v1.0.0 https://openhab.org/schemas/binding-1.0.0.xsd">
 
 	<name>AdaxHeater Binding</name>
-	<description>This is the binding for AdaxHeater.</description>
+	<description>This is the binding for ADAX Wifi heaters.</description>
 	<author>Nicolai Grodum</author>
 
 </binding:binding>

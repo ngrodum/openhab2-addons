@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2020 Contributors to the openHAB project
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -13,7 +13,7 @@
 package org.openhab.binding.adaxheater.internal;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.core.thing.ThingTypeUID;
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
 
 /**
  * The {@link AdaxHeaterBindingConstants} class defines common constants, which are
@@ -27,8 +27,29 @@ public class AdaxHeaterBindingConstants {
     private static final String BINDING_ID = "adaxheater";
 
     // List of all Thing Type UIDs
-    public static final ThingTypeUID THING_TYPE_SAMPLE = new ThingTypeUID(BINDING_ID, "sample");
+    public final static ThingTypeUID THING_TYPE_ACCOUNT = new ThingTypeUID(BINDING_ID, "account");
+    public final static ThingTypeUID THING_TYPE_ZONE = new ThingTypeUID(BINDING_ID, "zone");
+    public final static ThingTypeUID THING_TYPE_HEATER = new ThingTypeUID(BINDING_ID, "heater");
+
+    //List of all Account Thing parameters:
+    public static final String PARAMETER_ACCOUNT_USEREMAIL = "username";
+    public static final String PARAMETER_ACCOUNT_PASSWORD = "password";
+    public static final String PARAMETER_ACCOUNT_USERID = "userid";
+    public static final String PARAMETER_ACCOUNT_PRIVATEKEY = "privatekey";
+
+    //List of all Zone Thing parameters:
+    public static final String PARAMETER_ZONE_NAME = "zoneName";
+
+    //List of all Heater Thing parameters:
+    public static final String PARAMETER_HEATER_NAME = "heaterName";
+
 
     // List of all Channel ids
-    public static final String CHANNEL_1 = "channel1";
+    public final static String CHANNEL_ZONE_ONLINE_HEATERS = "zoneOnlineHeaterCount";
+    public final static String CHANNEL_ZONE_HEATERS = "zoneHeaterCount";
+    public final static String CHANNEL_ZONE_TARGET_TEMP = "zoneTargetTemperature";
+    public final static String CHANNEL_ZONE_CURRENT_TEMP = "zoneCurrentTemperature";
+
+    public final static String CHANNEL_HEATER_CURRENT_TEMP = "heaterCurrentTemperature";
+    public final static String CHANNEL_HEATER_IP = "heaterIP";
 }

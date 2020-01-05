@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2020 Contributors to the openHAB project
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -15,16 +15,22 @@ package org.openhab.binding.adaxheater.internal;
 import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants.*;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.core.thing.Thing;
-import org.openhab.core.thing.ThingTypeUID;
-import org.openhab.core.thing.binding.BaseThingHandlerFactory;
-import org.openhab.core.thing.binding.ThingHandler;
-import org.openhab.core.thing.binding.ThingHandlerFactory;
+import org.eclipse.smarthome.core.thing.Bridge;
+import org.eclipse.smarthome.core.thing.Thing;
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
+import org.eclipse.smarthome.core.thing.ThingUID;
+import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
+import org.eclipse.smarthome.core.thing.binding.ThingHandler;
+import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The {@link AdaxHeaterHandlerFactory} is responsible for creating things and thing
@@ -35,8 +41,17 @@ import org.osgi.service.component.annotations.Component;
 @NonNullByDefault
 @Component(configurationPid = "binding.adaxheater", service = ThingHandlerFactory.class)
 public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
+    private Logger logger = LoggerFactory.getLogger(AdaxHeaterHandlerFactory.class);
 
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.singleton(THING_TYPE_SAMPLE);
+    public final static Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = new HashSet<>();
+
+    static {
+        SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_ACCOUNT);
+        SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_ZONE);
+        SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_HEATER);
+    }
+
+    public final static HashMap<ThingUID, AdaxAccountHandler> accountHandlers = new HashMap(1);
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
@@ -44,13 +59,30 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
     }
 
     @Override
-    protected @Nullable ThingHandler createHandler(Thing thing) {
+    protected ThingHandler createHandler(Thing thing) {
+
+        logger.info("Adax createHAndler:{}", thing);
+
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
-        if (THING_TYPE_SAMPLE.equals(thingTypeUID)) {
+        if (thingTypeUID.equals(THING_TYPE_ACCOUNT)) {
+            AdaxAccountHandler accountHandler = new AdaxAccountHandler((Bridge) thing);
+            accountHandlers.put(thing.getUID(), accountHandler);
+            return accountHandler;
+        } else if (thingTypeUID.equals(THING_TYPE_ZONE)) {
+            return new AdaxZoneHandler(thing);
+        } else if (thingTypeUID.equals(THING_TYPE_HEATER)) {
             return new AdaxHeaterHandler(thing);
+        } else {
+            logger.error("Unknown thing type requested: {}", thingTypeUID);
+            return null;
         }
+    }
 
-        return null;
+    @Override
+    protected void removeHandler(ThingHandler thingHandler) {
+        if (thingHandler instanceof AdaxAccountHandler) {
+            accountHandlers.remove(thingHandler.getThing().getUID());
+        }
     }
 }
