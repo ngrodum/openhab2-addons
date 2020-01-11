@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.adaxheater.internal;
 
+import java.math.BigDecimal;
+
 /**
  * The {@link AdaxHeaterConfiguration} class contains fields mapping thing configuration parameters.
  *
@@ -22,5 +24,7 @@ public class AdaxHeaterConfiguration {
     /**
      * Sample configuration parameter. Replace with your own.
      */
-    public String config1;
+    public BigDecimal loginId;
+
+    public String privateKey;
 }
