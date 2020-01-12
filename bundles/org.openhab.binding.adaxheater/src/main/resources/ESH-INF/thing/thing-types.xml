@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="adaxheater"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<!-- Sample Thing Type -->
+	<bridge-type id="account">
+		<label>ADAX account</label>
+		<description>Account from which Zones and Heaters are being fetched.</description>
+
+
+			<config-description>
+				<parameter name="username" type="text" required="false" groupName="credentials">
+					<label>ADAX email</label>
+					<description>Email of account</description>
+				</parameter>
+
+				<parameter name="password" type="text" required="false" groupName="credentials">
+					<label>ADAX password</label>
+					<description>Password for the ADAX cloud</description>
+				</parameter>
+
+				<parameter name="loginId" type="integer" required="false">
+					<label>ADAX loginId</label>
+					<description>numeric loginId of account</description>
+				</parameter>
+
+				<parameter name="privateKey" type="text" required="false">
+					<label>ADAX privateKey</label>
+					<description>Auth token used for communication with the ADAX cloud</description>
+				</parameter>
+			</config-description>
+	</bridge-type>
+
+	<thing-type id="zone">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="account"/>
+		</supported-bridge-type-refs>
+
+		<label>Zone</label>
+		<description>A Zone containing heaters.</description>
+
+		<channels>
+			<channel id="zoneHeaterCount" typeId="zoneHeaterCount">
+				<label>Heater count</label>
+				<description>The number of heaters in a Zone</description>
+			</channel>
+			<channel id="zoneOnlineHeaterCount" typeId="zoneHeaterCount">
+				<label>Online heater count</label>
+				<description>The number of online heaters in a Zone</description>
+			</channel>
+			<channel id="zoneTargetTemperature" typeId="zoneTargetTemperature"/>
+			<channel id="zoneCurrentTemperature" typeId="currentTemperature">
+				<label>Current temperature</label>
+				<description>The current temperature of the Heater</description>
+			</channel>
+		</channels>
+
+		<config-description>
+			<parameter name="zoneName" type="text" required="true">
+				<label>Zone name</label>
+				<description>The name of the zone</description>
+			</parameter>
+		</config-description>
+	</thing-type>
+
+	<thing-type id="heater">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="account"/>
+		</supported-bridge-type-refs>
+
+		<label>Heater</label>
+		<description>An ADAX Wifi heater</description>
+
+		<channels>
+			<channel id="heaterIP" typeId="heaterIP"/>
+			<channel id="heaterCurrentTemperature" typeId="currentTemperature">
+				<description>The current temperature of the Heater</description>
+			</channel>
+		</channels>
+
+		<config-description>
+			<parameter name="heaterName" type="text" required="true">
+				<label>Heater name</label>
+				<description>The name of the heater</description>
+			</parameter>
+		</config-description>
+	</thing-type>
+
+	<channel-type id="heaterIP">
+		<item-type>String</item-type>
+		<label>IP</label>
+		<description>Local IP Address of the heater</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="zoneHeaterCount">
+		<item-type>Number</item-type>
+		<label>Zone heater count</label>
+		<description>The number of heaters in the zone</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="zoneTargetTemperature">
+		<item-type>Number</item-type>
+		<label>Target temperature</label>
+		<description>The target temperature of the Zone</description>
+	</channel-type>
+
+	<channel-type id="currentTemperature">
+		<item-type>Number</item-type>
+		<label>Current temperature</label>
+		<description>The current temperature of the Thing</description>
+		<state pattern="%.1f °C" readOnly="true"/>
+	</channel-type>
+
+</thing:thing-descriptions>

@@ -447,7 +447,7 @@ Number Shelly_Power     "Bath Room Light Power"                {channel="shelly:
 reading colors from color picker:
 
 ```
-import org.openhab.core.library.types.*
+import org.eclipse.smarthome.core.library.types.*
 
 rule "Get input change from garage light"
 when

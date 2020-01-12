@@ -1,0 +1,198 @@
+/**
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+package org.openhab.binding.adaxheater.internal;
+
+import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants.*;
+
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.DecimalType;
+import org.eclipse.smarthome.core.library.types.StringType;
+import org.eclipse.smarthome.core.thing.Bridge;
+import org.eclipse.smarthome.core.thing.ChannelUID;
+import org.eclipse.smarthome.core.thing.Thing;
+import org.eclipse.smarthome.core.thing.ThingStatus;
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
+import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
+import org.eclipse.smarthome.core.thing.binding.ThingHandler;
+import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.types.RefreshType;
+import org.openhab.binding.adaxheater.cloudapi.AdaxCloudClient;
+import org.openhab.binding.adaxheater.cloudapi.HeaterInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.Date;
+
+/**
+ * The {@link AdaxHeaterHandler} is responsible for handling commands, which are
+ * sent to one of the channels.
+ *
+ * @author Nicolai Grodum - Initial contribution
+ */
+@NonNullByDefault
+public class AdaxHeaterHandler extends BaseThingHandler {
+
+    private final Logger logger = LoggerFactory.getLogger(AdaxHeaterHandler.class);
+
+    private @Nullable AdaxHeaterConfiguration config;
+
+    private static final int HEATER_ONLINE_GRACE_PERIOD_SECONDS = 60 * 5; //5 minutes
+
+
+    private @Nullable AdaxCloudClient client;
+    private final Long heaterId;
+
+    public AdaxHeaterHandler(Thing thing) {
+        super(thing);
+        heaterId = Long.parseLong(thing.getUID().getId());
+    }
+
+
+    public Long getHeaterId() {
+        return heaterId;
+    }
+
+    @Override
+    public void handleCommand(ChannelUID channelUID, Command command) {
+      //  if (CHANNEL_1.equals(channelUID.getId())) {
+            if (command instanceof RefreshType) {
+                try {
+                    updateHeaterData(client.getHeater(heaterId));
+                } catch (Exception e) {
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                }
+            }
+
+            // TODO: handle command
+
+            // Note: if communication with thing fails for some reason,
+            // indicate that by setting the status with detail information:
+            // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+            // "Could not control device at IP address x.x.x.x");
+     //   }
+
+      //  logger.info("ADAX handleCommand:{} " +  + " cmd=" + channelUID, command);
+
+        // Note: if communication with thing fails for some reason,
+        // indicate that by setting the status with detail information
+        // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+        // "Could not control device at IP address x.x.x.x");
+
+//handleCommand:adaxheater:zone:5584:zoneCurrentTemperature cmd=REFRESH
+
+
+    }
+
+    @Override
+    public void initialize() {
+        // logger.debug("Start initializing!");
+        //config = getConfigAs(AdaxHeaterConfiguration.class);
+
+        // TODO: Initialize the handler.
+        // The framework requires you to return from this method quickly. Also, before leaving this method a thing
+        // status from one of ONLINE, OFFLINE or UNKNOWN must be set. This might already be the real thing status in
+        // case you can decide it directly.
+        // In case you can not decide the thing status directly (e.g. for long running connection handshake using WAN
+        // access or similar) you should set status UNKNOWN here and then decide the real status asynchronously in the
+        // background.
+
+        // set the thing status to UNKNOWN temporarily and let the background task decide for the real status.
+        // the framework is then able to reuse the resources from the thing handler initialization.
+        // we set this upfront to reliably check status updates in unit tests.
+
+        // UNKNOWN, ONLINE, OFFLINE or REMOVED allowed!
+        updateStatus(ThingStatus.UNKNOWN);
+
+        this.client = getBridgeHandler().getClient();
+
+
+        // // Example for background initialization:
+        // scheduler.execute(() -> {
+        //     boolean thingReachable = true; // <background task with long running initialization here>
+        //     // when done do:
+        //     if (thingReachable) {
+        //         updateStatus(ThingStatus.ONLINE);
+        //     } else {
+        //         updateStatus(ThingStatus.OFFLINE);
+        //     }
+        // });
+
+        // logger.debug("Finished initializing!");
+
+        // Note: When initialization can NOT be done set the status with more details for further
+        // analysis. See also class ThingStatusDetail for all available status details.
+        // Add a description to give user information to understand why thing does not work as expected. E.g.
+        // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+        // "Can not access device as username and/or password are invalid");
+    }
+
+    @Nullable
+    private synchronized AdaxAccountHandler getBridgeHandler() {
+
+        Bridge bridge = getBridge();
+        if (bridge == null) {
+            logger.warn("Required bridge not defined for device {}.");
+            return null;
+        } else {
+            return getBridgeHandler(bridge);
+        }
+    }
+
+    @Nullable
+    private AdaxAccountHandler getBridgeHandler(Bridge bridge) {
+
+        ThingHandler handler = bridge.getHandler();
+        if (handler instanceof AdaxAccountHandler) {
+            return (AdaxAccountHandler) handler;
+        } else {
+            logger.warn("No available bridge handler found yet. Bridge: {} .", bridge.getUID());
+            return null;
+        }
+    }
+
+    public void updateHeaterData(HeaterInfo heaterInfo) throws IOException {
+
+        if (heaterInfo != null) {
+
+         //   logger.info("h.getCurrentTemperature() = " + getThing().getStatus() + isHeaterOnline(heaterInfo) + " " + heaterInfo.getName() + " C=" + heaterInfo.getCurrentTemperature() + "T=" + heaterInfo.getTargetTemperature());
+
+            if (getThing().getStatus() != ThingStatus.ONLINE) {
+
+                if (isHeaterOnline(heaterInfo)) {
+                    updateStatus(ThingStatus.ONLINE);
+                } else {
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Last seen online: " + heaterInfo.getLastSeen());
+                }
+            }
+
+            if (!isHeaterOnline(heaterInfo)) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Last seen online: " + heaterInfo.getLastSeen());
+            }
+
+            if (heaterInfo.getCurrentTemperature() != null) {
+                updateState(CHANNEL_HEATER_CURRENT_TEMP, new DecimalType(heaterInfo.getCurrentTemperature() / 100.0));
+            }
+
+            if (heaterInfo.getIp() != null) {
+                updateState(CHANNEL_HEATER_IP, new StringType(heaterInfo.getIp()));
+            }
+        }
+    }
+
+    public static boolean isHeaterOnline(HeaterInfo h) {
+        return h.getLastSeen().after(new Timestamp(new Date().getTime() - HEATER_ONLINE_GRACE_PERIOD_SECONDS * 1000));
+    }
+}
