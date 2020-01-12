@@ -41,7 +41,7 @@ public class AdaxAccountHandler extends BaseBridgeHandler {
     private @Nullable AdaxCloudClient client;
     private final BundleContext bundleContext;
     private @Nullable AdaxAccountPoller poller;
-    private final Logger logger = LoggerFactory.getLogger(AdaxHeaterHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(AdaxAccountHandler.class);
 
     private @Nullable AdaxHeaterConfiguration config;
 
@@ -59,7 +59,7 @@ public class AdaxAccountHandler extends BaseBridgeHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        logger.info("ADAX handleCommand:" + channelUID + " cmd=" + command);
+        logger.debug("ADAX handleCommand:{}, cmd={}", channelUID, command);
     }
 
     @Override

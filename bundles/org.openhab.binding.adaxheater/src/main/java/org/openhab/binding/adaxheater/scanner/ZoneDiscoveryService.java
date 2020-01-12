@@ -55,7 +55,7 @@ public class ZoneDiscoveryService extends AbstractDiscoveryService {
         for (Map.Entry<ThingUID, AdaxAccountHandler> account : AdaxHeaterHandlerFactory.accountHandlers.entrySet()) {
 
             try {
-                logger.info("Retrieving zones for " + account.getKey());
+                logger.debug("Retrieving zones for {}", account.getKey());
                 List<Zone> zones = account.getValue().getClient().getAllZones();
 
                 for (Zone zone : zones) {
@@ -64,7 +64,7 @@ public class ZoneDiscoveryService extends AbstractDiscoveryService {
                     }
                 }
 
-                logger.info("Retrieving heaters for " + account.getKey());
+                logger.debug("Retrieving heaters for {}", account.getKey());
                 List<HeaterInfo> heaters = account.getValue().getClient().getAllHeaters();
 
                 for (HeaterInfo heater : heaters) {
@@ -73,7 +73,7 @@ public class ZoneDiscoveryService extends AbstractDiscoveryService {
                     }
                 }
             } catch (Exception e) {
-                logger.warn("could not scan" + account.getKey(), e);
+                logger.warn("could not scan {}", account.getKey(), e);
             }
         }
     }

@@ -12,6 +12,11 @@
  */
 package org.openhab.binding.adaxheater.cloudapi;
 
+/**
+ * The {@link ClientErrorType} stores client error numbers
+ *
+ * @author Nicolai Grodum - Initial contribution 27/03/2017
+ */
 public enum ClientErrorType {
     InvalidSignature(10001),
     SignupInvalidParams(10002),

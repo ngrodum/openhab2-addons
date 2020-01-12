@@ -1,3 +1,15 @@
+/**
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
 package org.openhab.binding.adaxheater.internal;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -19,7 +31,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Created by ngrodum on 01/04/2017.
+ * The {@link AdaxAccountPoller} Responsible for polling the Adax cloud
+ *
+ * @author Nicolai Grodum - Initial contribution
  */
 @NonNullByDefault
 public class AdaxAccountPoller {

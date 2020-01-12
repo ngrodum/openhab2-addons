@@ -44,9 +44,6 @@ public class SigningKeys {
             sig.update(encodeToBigEndianBytes(data));
             return byteArrayToHexString(sig.sign(), true);
         } catch (Throwable ex) {
-
-            ex.printStackTrace();
-
             logger.warn("failed to sign data", ex);
             throw new IllegalArgumentException("privateKey");
         }
@@ -152,7 +149,7 @@ public class SigningKeys {
             digest.update(data);
             return digest.digest();
         } catch (Throwable ex) {
-            ex.printStackTrace();
+            logger.error("getSha1 failed", ex);
             return null;
         }
     }
@@ -174,7 +171,7 @@ public class SigningKeys {
             }
             return getSha1(bytes);
         } catch (Throwable ex) {
-            ex.printStackTrace();
+            logger.error("getSha1AsciiOnly failed", ex);
             return null;
         }
     }

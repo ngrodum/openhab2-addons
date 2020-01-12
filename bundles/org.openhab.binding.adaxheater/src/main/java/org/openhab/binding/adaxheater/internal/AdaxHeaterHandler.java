@@ -42,6 +42,7 @@ import java.util.Date;
  *
  * @author Nicolai Grodum - Initial contribution
  */
+@NonNullByDefault
 public class AdaxHeaterHandler extends BaseThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(AdaxHeaterHandler.class);
@@ -50,7 +51,8 @@ public class AdaxHeaterHandler extends BaseThingHandler {
 
     private static final int HEATER_ONLINE_GRACE_PERIOD_SECONDS = 60 * 5; //5 minutes
 
-    private AdaxCloudClient client;
+
+    private @Nullable AdaxCloudClient client;
     private final Long heaterId;
 
     public AdaxHeaterHandler(Thing thing) {
@@ -82,7 +84,7 @@ public class AdaxHeaterHandler extends BaseThingHandler {
             // "Could not control device at IP address x.x.x.x");
      //   }
 
-        logger.info("ADAX handleCommand:" + channelUID + " cmd=" + command);
+      //  logger.info("ADAX handleCommand:{} " +  + " cmd=" + channelUID, command);
 
         // Note: if communication with thing fails for some reason,
         // indicate that by setting the status with detail information
@@ -137,6 +139,7 @@ public class AdaxHeaterHandler extends BaseThingHandler {
         // "Can not access device as username and/or password are invalid");
     }
 
+    @Nullable
     private synchronized AdaxAccountHandler getBridgeHandler() {
 
         Bridge bridge = getBridge();
@@ -148,6 +151,7 @@ public class AdaxHeaterHandler extends BaseThingHandler {
         }
     }
 
+    @Nullable
     private AdaxAccountHandler getBridgeHandler(Bridge bridge) {
 
         ThingHandler handler = bridge.getHandler();
@@ -163,7 +167,7 @@ public class AdaxHeaterHandler extends BaseThingHandler {
 
         if (heaterInfo != null) {
 
-            logger.info("h.getCurrentTemperature() = " + getThing().getStatus() + isHeaterOnline(heaterInfo) + " " + heaterInfo.getName() + " C=" + heaterInfo.getCurrentTemperature() + "T=" + heaterInfo.getTargetTemperature());
+         //   logger.info("h.getCurrentTemperature() = " + getThing().getStatus() + isHeaterOnline(heaterInfo) + " " + heaterInfo.getName() + " C=" + heaterInfo.getCurrentTemperature() + "T=" + heaterInfo.getTargetTemperature());
 
             if (getThing().getStatus() != ThingStatus.ONLINE) {
 

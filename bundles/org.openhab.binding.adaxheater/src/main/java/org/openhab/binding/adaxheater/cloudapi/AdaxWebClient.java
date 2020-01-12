@@ -108,8 +108,6 @@ public abstract class AdaxWebClient {
             return sslContext.getSocketFactory();
 
         } catch (Exception exc) {
-            exc.printStackTrace();
-
             logger.error("createSSLSocketFactory", exc);
         }
         return null;
@@ -134,8 +132,8 @@ public abstract class AdaxWebClient {
                     str = URLEncoder.encode(key, charset);
                     encodedValue = URLEncoder.encode(value, charset);
                 } catch (UnsupportedEncodingException exc) {
-                    logger.error("getParamListAsString failed! for key " + key, exc);
-                    throw new IOException("please check your private key format");
+                    logger.error("getParamListAsString failed!", exc);
+                    throw new IOException("please check your private key format for " + key);
                 }
                 if (!(str == null || encodedValue == null)) {
                     stringBuilder.append(str);
@@ -179,19 +177,19 @@ public abstract class AdaxWebClient {
 
         byte[] bytes = buffer.toByteArray();
 
-        logger.info("response:" + new String(bytes));
+        logger.debug("response: {}", new String(bytes));
 
         JsonNode treeRoot = jsonMarshaller.readTree(new ByteArrayInputStream(buffer.toByteArray()));
         if (treeRoot != null) {
             result = jsonMarshaller.parseCommonJSONResponseString(treeRoot, aClass, isExpectError);
-            logger.info("response result:" + result);
+            logger.debug("response result: {}", result);
         }
         return result;
     }
 
     protected <T> List<T> postApiRequest(String endpoint, PairList<String, String> params, Class<T> expectedResponseClass) throws IOException {
         try {
-            logger.info("request to {}", endpoint);
+            logger.debug("request to {}", endpoint);
             HttpURLConnection con = (HttpURLConnection) getUrl(endpoint).openConnection();
             setServerCertificate(con);
 
@@ -210,12 +208,12 @@ public abstract class AdaxWebClient {
             dos.flush();
             dos.close();
 
-            logger.info("response=" + con.getResponseCode());
+            logger.debug("response={}", con.getResponseCode());
 
             return parseJsonResponse(con.getInputStream(), false, expectedResponseClass);
 
         } catch (Exception e) {
-            logger.error("postRestRequest " + e);
+            logger.error("postRestRequest ", e);
             throw e;
         }
     }

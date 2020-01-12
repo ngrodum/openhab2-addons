@@ -12,6 +12,9 @@
  */
 package org.openhab.binding.adaxheater.internal;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+
 import java.math.BigDecimal;
 
 /**
@@ -19,12 +22,14 @@ import java.math.BigDecimal;
  *
  * @author Nicolai Grodum - Initial contribution
  */
+@NonNullByDefault
 public class AdaxHeaterConfiguration {
 
     /**
      * Sample configuration parameter. Replace with your own.
      */
-    public BigDecimal loginId;
 
-    public String privateKey;
+    public @Nullable BigDecimal loginId;
+
+    public @Nullable String privateKey;
 }

@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Nicolai Grodum - Initial contribution
  */
+
 @Component(configurationPid = "binding.adaxheater", service = ThingHandlerFactory.class)
 public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
     private Logger logger = LoggerFactory.getLogger(AdaxHeaterHandlerFactory.class);
@@ -58,7 +59,7 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
     @Override
     protected ThingHandler createHandler(Thing thing) {
 
-        logger.info("Adax createHAndler:{}", thing);
+        logger.info("Adax createHandler:{}", thing);
 
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 

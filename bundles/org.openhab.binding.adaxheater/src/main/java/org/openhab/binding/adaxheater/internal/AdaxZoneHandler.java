@@ -56,7 +56,7 @@ public class AdaxZoneHandler extends BaseThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
 
-        logger.info("ADAX handleCommand:" + channelUID + " cmd=" + command);
+       // logger.info("ADAX handleCommand:" + channelUID + " cmd=" + command);
 
         // Note: if communication with thing fails for some reason,
         // indicate that by setting the status with detail information
@@ -127,7 +127,7 @@ public class AdaxZoneHandler extends BaseThingHandler {
     @Override
     public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
         super.bridgeStatusChanged(bridgeStatusInfo);
-        logger.info("bridgeStatusChanged " + bridgeStatusInfo);
+     //   logger.info("bridgeStatusChanged " + bridgeStatusInfo);
     }
 
     private synchronized AdaxAccountHandler getBridgeHandler() {
@@ -156,7 +156,8 @@ public class AdaxZoneHandler extends BaseThingHandler {
 
         if (z != null) {
 
-            logger.info("z.getCurrentTemperature() = " + getThing().getStatus() + " " + z.getName() + " C=" + z.getCurrentTemperature() + "T=" + z.getTargetTemperature());
+            logger.debug("z.getCurrentTemperature() = {} {} C={} T={}",
+                         getThing().getStatus(), z.getName(), z.getCurrentTemperature(), z.getTargetTemperature());
 
             if (getThing().getStatus() != ThingStatus.ONLINE){
                 updateStatus(ThingStatus.ONLINE);
