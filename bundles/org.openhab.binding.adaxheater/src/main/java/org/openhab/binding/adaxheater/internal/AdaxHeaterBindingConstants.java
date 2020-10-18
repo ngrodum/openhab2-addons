@@ -34,15 +34,12 @@ public class AdaxHeaterBindingConstants {
     //List of all Account Thing parameters:
     // public static final String PARAMETER_ACCOUNT_USEREMAIL = "username";
     // public static final String PARAMETER_ACCOUNT_PASSWORD = "password";
-    // public static final String PARAMETER_ACCOUNT_LOGINID = "loginId";
-    // public static final String PARAMETER_ACCOUNT_PRIVATEKEY = "privateKey";
 
     //List of all Zone Thing parameters:
     public static final String PARAMETER_ZONE_NAME = "zoneName";
 
     //List of all Heater Thing parameters:
     public static final String PARAMETER_HEATER_NAME = "heaterName";
-
 
     // List of all Channel ids
     public final static String CHANNEL_ZONE_ONLINE_HEATERS = "zoneOnlineHeaterCount";

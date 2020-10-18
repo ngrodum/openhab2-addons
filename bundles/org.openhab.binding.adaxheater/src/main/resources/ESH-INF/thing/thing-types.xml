@@ -11,25 +11,16 @@
 
 
 			<config-description>
-				<parameter name="username" type="text" required="false" groupName="credentials">
-					<label>ADAX email</label>
-					<description>Email of account</description>
+				<parameter name="username" type="text" required="true" groupName="credentials">
+					<label>API Username</label>
+					<description>Username for Remote user clent API. Found in Adax Wifi app.</description>
 				</parameter>
 
-				<parameter name="password" type="text" required="false" groupName="credentials">
-					<label>ADAX password</label>
-					<description>Password for the ADAX cloud</description>
+				<parameter name="password" type="text" required="true" groupName="credentials">
+					<label>API Password</label>
+					<description>Password for Remote user clent API. Found in Adax Wifi app.</description>
 				</parameter>
 
-				<parameter name="loginId" type="integer" required="false">
-					<label>ADAX loginId</label>
-					<description>numeric loginId of account</description>
-				</parameter>
-
-				<parameter name="privateKey" type="text" required="false">
-					<label>ADAX privateKey</label>
-					<description>Auth token used for communication with the ADAX cloud</description>
-				</parameter>
 			</config-description>
 	</bridge-type>
 

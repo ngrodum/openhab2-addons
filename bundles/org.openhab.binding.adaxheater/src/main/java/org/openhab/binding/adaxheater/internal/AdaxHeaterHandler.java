@@ -29,6 +29,7 @@ import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.adaxheater.cloudapi.AdaxCloudClient;
 import org.openhab.binding.adaxheater.cloudapi.HeaterInfo;
+import org.openhab.binding.adaxheater.publicApi.AdaxClientApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,7 @@ public class AdaxHeaterHandler extends BaseThingHandler {
     private static final int HEATER_ONLINE_GRACE_PERIOD_SECONDS = 60 * 5; //5 minutes
 
 
-    private @Nullable AdaxCloudClient client;
+    private @Nullable AdaxClientApi client;
     private final Long heaterId;
 
     public AdaxHeaterHandler(Thing thing) {

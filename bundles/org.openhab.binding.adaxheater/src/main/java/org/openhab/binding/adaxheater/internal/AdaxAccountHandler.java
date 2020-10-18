@@ -15,6 +15,15 @@ package org.openhab.binding.adaxheater.internal;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.smarthome.auth.oauth2client.internal.OAuthFactoryImpl;
+import org.eclipse.smarthome.core.auth.client.oauth2.AccessTokenRefreshListener;
+import org.eclipse.smarthome.core.auth.client.oauth2.AccessTokenResponse;
+import org.eclipse.smarthome.core.auth.client.oauth2.OAuthClientService;
+import org.eclipse.smarthome.core.auth.client.oauth2.OAuthFactory;
+import org.eclipse.smarthome.io.net.http.HttpClientFactory;
+import org.eclipse.smarthome.io.net.http.internal.ExtensibleTrustManagerImpl;
+import org.eclipse.smarthome.io.net.http.internal.WebClientFactoryImpl;
 import org.openhab.binding.adaxheater.cloudapi.AdaxCloudClient;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
@@ -23,6 +32,8 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.types.Command;
+import org.openhab.binding.adaxheater.cloudapi.Zone;
+import org.openhab.binding.adaxheater.publicApi.AdaxClientApi;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
@@ -38,18 +49,27 @@ import java.util.List;
  */
 public class AdaxAccountHandler extends BaseBridgeHandler {
 
-    private @Nullable AdaxCloudClient client;
+    //TO BUILD: export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-11.0.3.jdk/Contents/Home;mvn clean install -DskipTests -DskipChecks -pl :org.openhab.binding.adaxheater
+
+
+    private final OAuthFactory oAuthFactory;
+    private final HttpClient httpClient;
+    private @Nullable AdaxClientApi client;
     private final BundleContext bundleContext;
     private @Nullable AdaxAccountPoller poller;
     private final Logger logger = LoggerFactory.getLogger(AdaxAccountHandler.class);
 
-    private @Nullable AdaxHeaterConfiguration config;
+    private final String API_URL_TOKEN = "https://api-1.adax.no/client-api/auth/token";
 
-    public AdaxAccountHandler(Bridge bridge) {
+    private @Nullable AdaxHeaterConfiguration config;
+    private OAuthClientService oAuthService;
+
+    public AdaxAccountHandler(Bridge bridge, final OAuthFactory oAuthFactory, final HttpClient httpClient) {
         super(bridge);
+        this.oAuthFactory = oAuthFactory;
+        this.httpClient = httpClient;
         this.bundleContext = FrameworkUtil.getBundle(AdaxAccountHandler.class).getBundleContext();
         logger.debug("ADAX got bundleContext:{}", bundleContext);
-
     }
 
     private synchronized AdaxAccountPoller getPoller() {
@@ -68,8 +88,7 @@ public class AdaxAccountHandler extends BaseBridgeHandler {
     public void initialize() {
         logger.debug("Start initializing!");
         config = getConfigAs(AdaxHeaterConfiguration.class);
-        logger.debug("Got config: {}", config);
-        logger.debug("Got config: {}", config.privateKey);
+        logger.debug("Got config: {}", config.username);
 
         // TODO: Initialize the handler.
         // The framework requires you to return from this method quickly. Also, before leaving this method a thing
@@ -114,22 +133,37 @@ public class AdaxAccountHandler extends BaseBridgeHandler {
         // "Can not access device as username and/or password are invalid");
     }
 
-    public AdaxCloudClient getClient() {
-        if (this.client == null){
-          //  BigDecimal loginId = (BigDecimal) getConfig().get(PARAMETER_ACCOUNT_LOGINID);
-          //  String privateKey = (String) getConfig().get(PARAMETER_ACCOUNT_PRIVATEKEY);
+    /**
+     * Checks bridge configuration. If configuration is valid returns true.
+     *
+     * @return true if the configuration if valid
+     */
+    private boolean checkConfig(final AdaxHeaterConfiguration heaterConfig) {
+        if (StringUtils.isNotBlank(heaterConfig.password) && StringUtils.isNotBlank(heaterConfig.username)) {
+            return true;
+        } else {
+            logger.debug("Username or password empty.");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Missing configuration.");
+            return false;
+        }
+    }
 
-            if (config.privateKey == null || StringUtils.isEmpty(config.privateKey)) {
-                logger.error("No privateKey in configuration!");
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR);
-            } else if (config.loginId == null) {
-                logger.error("No loginId in configuration!");
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR);
-            } else {
-                client = new AdaxCloudClient(config.loginId.longValue(), config.privateKey, this.bundleContext);
-                updateStatus(ThingStatus.ONLINE);
-                //TODO: Do a proper online/offline check now and future..
-                logger.info("Initialized successfully.");
+    public AdaxClientApi getClient() {
+        if (this.client == null){
+
+            if (checkConfig(config)) {
+                final OAuthClientService oAuthService = oAuthFactory.createOAuthClientService(thing.getUID().getAsString(),
+                                                                                              API_URL_TOKEN,
+                                                                                              API_URL_TOKEN,
+                                                                                              config.username,
+                                                                                              config.password,
+                                                                                              null,
+                                                                                              true);
+                client = new AdaxClientApi(oAuthService, this.httpClient);
+
+            //    updateStatus(ThingStatus.ONLINE);
+
+                logger.info("Initialized client.");
             }
         }
 

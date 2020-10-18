@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.adaxheater.internal;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.smarthome.core.auth.client.oauth2.OAuthFactory;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.thing.*;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
@@ -39,7 +41,6 @@ import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants
 public class AdaxZoneHandler extends BaseThingHandler {
 
     private static Logger logger = LoggerFactory.getLogger(AdaxZoneHandler.class);
-    private AdaxCloudClient client;
     private final Long zoneId;
 
     private List<HeaterInfo> heaters = new ArrayList<>();
@@ -69,7 +70,7 @@ public class AdaxZoneHandler extends BaseThingHandler {
             if (command == RefreshType.REFRESH) {
                 //  schedulePoller(0, true);
 
-                updateZoneData(client.getZone(zoneId));
+                updateZoneData(getBridgeHandler().getClient().getZone(zoneId));
 
             } else {
                 switch (channelUID.getId()) {
@@ -78,7 +79,7 @@ public class AdaxZoneHandler extends BaseThingHandler {
                         try {
                             Integer targetTemp = Integer.parseInt(command.toString());
 
-                            client.setZoneTargetTemp(zoneId, targetTemp * 100);
+                            getBridgeHandler().getClient().setZoneTargetTemp(zoneId, targetTemp * 100);
 
                             if (this.getThing().getStatus() != ThingStatus.ONLINE) {
                                 updateStatus(ThingStatus.ONLINE);
@@ -102,11 +103,9 @@ public class AdaxZoneHandler extends BaseThingHandler {
 
     @Override
     public void initialize() {
-        super.initialize();
+       // super.initialize();
         // TODO: Initialize the thing. If done set status to ONLINE to indicate proper working.
         // Long running initialization should be done asynchronously in background.
-
-        this.client = getBridgeHandler().getClient();
 
         // UNKNOWN, ONLINE, OFFLINE or REMOVED allowed!
         updateStatus(ThingStatus.UNKNOWN);

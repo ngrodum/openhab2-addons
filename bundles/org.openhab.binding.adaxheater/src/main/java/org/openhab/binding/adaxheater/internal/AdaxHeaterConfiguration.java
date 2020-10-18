@@ -22,14 +22,13 @@ import java.math.BigDecimal;
  *
  * @author Nicolai Grodum - Initial contribution
  */
-@NonNullByDefault
 public class AdaxHeaterConfiguration {
 
     /**
-     * Sample configuration parameter. Replace with your own.
+     * Configuration parameters for Adax Heater
      */
 
-    public @Nullable BigDecimal loginId;
+    public String username;
 
-    public @Nullable String privateKey;
+    public String password;
 }

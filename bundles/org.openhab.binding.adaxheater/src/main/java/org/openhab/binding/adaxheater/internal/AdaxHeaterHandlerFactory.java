@@ -19,6 +19,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.smarthome.core.auth.client.oauth2.OAuthFactory;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
@@ -26,7 +28,10 @@ import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
+import org.eclipse.smarthome.io.net.http.HttpClientFactory;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +44,9 @@ import org.slf4j.LoggerFactory;
 
 @Component(configurationPid = "binding.adaxheater", service = ThingHandlerFactory.class)
 public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
+
+    private final OAuthFactory oAuthFactory;
+    private final HttpClient httpClient;
     private Logger logger = LoggerFactory.getLogger(AdaxHeaterHandlerFactory.class);
 
     public final static Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = new HashSet<>();
@@ -47,6 +55,12 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
         SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_ACCOUNT);
         SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_ZONE);
         SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_HEATER);
+    }
+
+    @Activate
+    public AdaxHeaterHandlerFactory(@Reference OAuthFactory oAuthFactory, @Reference HttpClientFactory httpClientFactory) {
+        this.oAuthFactory = oAuthFactory;
+        httpClient = httpClientFactory.getCommonHttpClient();
     }
 
     public final static HashMap<ThingUID, AdaxAccountHandler> accountHandlers = new HashMap(1);
@@ -64,7 +78,7 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (thingTypeUID.equals(THING_TYPE_ACCOUNT)) {
-            AdaxAccountHandler accountHandler = new AdaxAccountHandler((Bridge) thing);
+            AdaxAccountHandler accountHandler = new AdaxAccountHandler((Bridge) thing, oAuthFactory, httpClient);
             accountHandlers.put(thing.getUID(), accountHandler);
             return accountHandler;
         } else if (thingTypeUID.equals(THING_TYPE_ZONE)) {

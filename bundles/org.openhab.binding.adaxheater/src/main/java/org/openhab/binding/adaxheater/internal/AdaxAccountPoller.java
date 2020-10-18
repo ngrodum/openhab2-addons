@@ -20,6 +20,7 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.openhab.binding.adaxheater.cloudapi.AdaxCloudClient;
 import org.openhab.binding.adaxheater.cloudapi.HeaterInfo;
 import org.openhab.binding.adaxheater.cloudapi.Zone;
+import org.openhab.binding.adaxheater.publicApi.AdaxClientApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,12 +47,10 @@ public class AdaxAccountPoller {
     private static final int OFFLINE_POLL_INTERVAL_MS = 120000;
 
     private @Nullable ScheduledFuture<?> getStatusJob = null;
-    private AdaxCloudClient client;
 
     public AdaxAccountPoller(AdaxAccountHandler bridge, ScheduledExecutorService scheduler) {
         this.bridge = bridge;
         this.scheduler = scheduler;
-        this.client = bridge.getClient();
     }
 
     public synchronized void schedulePoller(int initialDelayMs, boolean online) {
@@ -127,7 +126,7 @@ public class AdaxAccountPoller {
 
             if (!allZoneHandlers.isEmpty()) {
 
-                List<Zone> allZones = getClient().getAllZones();
+                List<Zone> allZones = bridge.getClient().getAllZones();
 
                 allZones
                         .stream()
@@ -159,7 +158,7 @@ public class AdaxAccountPoller {
 
             if (!allZoneHandlers.isEmpty() || !allHeaterHandlers.isEmpty()) {
 
-                List<HeaterInfo> allHeaters = getClient().getAllHeaters();
+                List<HeaterInfo> allHeaters = bridge.getClient().getAllHeaters();
 
                 //update zone handlers:
                 Map<AdaxZoneHandler, List<HeaterInfo>> heatersByZone = allHeaters
@@ -190,13 +189,5 @@ public class AdaxAccountPoller {
         } catch (Exception e) {
             logger.error("error reading zones from ADAX.", e);
         }
-    }
-
-
-    private AdaxCloudClient getClient() {
-        if (this.client == null) {
-            this.client = bridge.getClient();
-        }
-        return this.client;
     }
 }
