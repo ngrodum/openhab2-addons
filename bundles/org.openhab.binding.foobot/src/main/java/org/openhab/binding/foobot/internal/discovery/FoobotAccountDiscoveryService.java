@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -85,7 +85,7 @@ public class FoobotAccountDiscoveryService extends AbstractDiscoveryService
     private void addThing(final FoobotDevice foobot) {
         logger.debug("Adding new Foobot '{}' with uuid: {}", foobot.getName(), foobot.getUuid());
 
-        final ThingUID thingUID = new ThingUID(FoobotBindingConstants.THING_TYPE_FOOBOT, foobot.getUuid());
+        final ThingUID thingUID = new ThingUID(FoobotBindingConstants.THING_TYPE_FOOBOT, bridgeUID, foobot.getUuid());
         final Map<String, Object> properties = new HashMap<>();
         properties.put(Thing.PROPERTY_SERIAL_NUMBER, foobot.getUuid());
         properties.put(FoobotBindingConstants.CONFIG_UUID, foobot.getUuid());

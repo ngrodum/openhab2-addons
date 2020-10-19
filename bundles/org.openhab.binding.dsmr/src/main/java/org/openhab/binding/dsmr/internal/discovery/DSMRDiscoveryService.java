@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -70,7 +70,7 @@ public abstract class DSMRDiscoveryService extends AbstractDiscoveryService {
     public boolean meterDiscovered(DSMRMeterDescriptor meterDescriptor, ThingUID dsmrBridgeUID) {
         DSMRMeterType meterType = meterDescriptor.getMeterType();
         ThingTypeUID thingTypeUID = meterType.getThingTypeUID();
-        ThingUID thingUID = new ThingUID(thingTypeUID, meterDescriptor.getChannelId());
+        ThingUID thingUID = new ThingUID(thingTypeUID, dsmrBridgeUID, meterDescriptor.getChannelId());
 
         // Construct the configuration for this meter
         Map<String, Object> properties = new HashMap<>();

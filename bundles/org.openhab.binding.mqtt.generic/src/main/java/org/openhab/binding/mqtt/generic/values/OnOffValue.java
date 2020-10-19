@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -21,6 +21,8 @@ import org.eclipse.smarthome.core.library.CoreItemFactory;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.types.CommandDescriptionBuilder;
+import org.eclipse.smarthome.core.types.CommandOption;
 
 /**
  * Implements an on/off boolean value.
@@ -87,7 +89,20 @@ public class OnOffValue extends Value {
     }
 
     @Override
-    public String getMQTTpublishValue() {
-        return (state == OnOffType.ON) ? onCommand : offCommand;
+    public String getMQTTpublishValue(@Nullable String pattern) {
+        String formatPattern = pattern;
+        if (formatPattern == null) {
+            formatPattern = "%s";
+        }
+
+        return String.format(formatPattern, state == OnOffType.ON ? onCommand : offCommand);
+    }
+
+    @Override
+    public CommandDescriptionBuilder createCommandDescription() {
+        CommandDescriptionBuilder builder = super.createCommandDescription();
+        builder = builder.withCommandOption(new CommandOption(onCommand, onCommand));
+        builder = builder.withCommandOption(new CommandOption(offCommand, offCommand));
+        return builder;
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -34,6 +34,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -79,6 +81,7 @@ import org.slf4j.LoggerFactory;
  *         Timeclock, and Green Mode. Added option to read XML from file. Switched to jetty HTTP client for better
  *         exception handling. Added keypad model discovery.
  */
+@NonNullByDefault
 public class LutronDeviceDiscoveryService extends AbstractDiscoveryService {
 
     private static final int DECLARATION_MAX_LEN = 80;
@@ -96,7 +99,7 @@ public class LutronDeviceDiscoveryService extends AbstractDiscoveryService {
 
     private final HttpClient httpClient;
 
-    private Future<?> scanTask;
+    private @Nullable Future<?> scanTask;
 
     public LutronDeviceDiscoveryService(IPBridgeHandler bridgeHandler, HttpClient httpClient)
             throws IllegalArgumentException {
@@ -127,6 +130,11 @@ public class LutronDeviceDiscoveryService extends AbstractDiscoveryService {
 
     private void readDeviceDatabase() {
         Project project = null;
+
+        if (bridgeHandler == null || bridgeHandler.getIPBridgeConfig() == null) {
+            logger.debug("Unable to get bridge config. Exiting.");
+            return;
+        }
         String discFileName = bridgeHandler.getIPBridgeConfig().discoveryFile;
         String address = "http://" + bridgeHandler.getIPBridgeConfig().ipAddress + "/DbXmlInfo.xml";
 
@@ -388,15 +396,16 @@ public class LutronDeviceDiscoveryService extends AbstractDiscoveryService {
                 case NON_DIM:
                 case NON_DIM_INC:
                 case NON_DIM_ELV:
+                case RELAY_LIGHTING:
                     notifyDiscovery(THING_TYPE_SWITCH, output.getIntegrationId(), label);
                     break;
 
                 case CCO_PULSED:
-                    notifyDiscovery(THING_TYPE_CCO_PULSED, output.getIntegrationId(), label);
+                    notifyDiscovery(THING_TYPE_CCO, output.getIntegrationId(), label, CCO_TYPE, CCO_TYPE_PULSED);
                     break;
 
                 case CCO_MAINTAINED:
-                    notifyDiscovery(THING_TYPE_CCO_MAINTAINED, output.getIntegrationId(), label);
+                    notifyDiscovery(THING_TYPE_CCO, output.getIntegrationId(), label, CCO_TYPE, CCO_TYPE_MAINTAINED);
                     break;
 
                 case SYSTEM_SHADE:
@@ -429,8 +438,8 @@ public class LutronDeviceDiscoveryService extends AbstractDiscoveryService {
         notifyDiscovery(THING_TYPE_GREENMODE, greenmode.getIntegrationId(), label);
     }
 
-    private void notifyDiscovery(ThingTypeUID thingTypeUID, Integer integrationId, String label, String propName,
-            Object propValue) {
+    private void notifyDiscovery(ThingTypeUID thingTypeUID, @Nullable Integer integrationId, String label,
+            @Nullable String propName, @Nullable Object propValue) {
         if (integrationId == null) {
             logger.info("Discovered {} with no integration ID", label);
 

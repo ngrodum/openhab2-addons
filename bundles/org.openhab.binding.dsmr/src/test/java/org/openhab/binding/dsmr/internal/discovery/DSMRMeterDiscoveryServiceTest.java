@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.smarthome.core.thing.Thing;
+import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.io.transport.serial.PortInUseException;
 import org.junit.Before;
 import org.junit.Test;
@@ -95,6 +96,7 @@ public class DSMRMeterDiscoveryServiceTest {
             return detectMetersRef.get().next();
         });
         when(thing.getHandler()).thenReturn(meterHandler);
+        when(bridge.getThing().getUID()).thenReturn(new ThingUID("dsmr:dsmrBridge:22e5393c"));
         when(bridge.getThing().getThings()).thenReturn(things);
 
         service.telegramReceived(expected);
@@ -122,6 +124,7 @@ public class DSMRMeterDiscoveryServiceTest {
                 unregisteredMeter.set(true);
             }
         };
+        when(bridge.getThing().getUID()).thenReturn(new ThingUID("dsmr:dsmrBridge:22e5393c"));
         when(bridge.getThing().getThings()).thenReturn(Collections.emptyList());
 
         service.telegramReceived(telegram);

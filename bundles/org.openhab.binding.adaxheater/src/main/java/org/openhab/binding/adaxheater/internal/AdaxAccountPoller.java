@@ -12,24 +12,21 @@
  */
 package org.openhab.binding.adaxheater.internal;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.smarthome.core.thing.Thing;
-import org.eclipse.smarthome.core.thing.ThingStatus;
-import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.openhab.binding.adaxheater.cloudapi.AdaxCloudClient;
-import org.openhab.binding.adaxheater.cloudapi.HeaterInfo;
-import org.openhab.binding.adaxheater.cloudapi.Zone;
-import org.openhab.binding.adaxheater.publicApi.AdaxClientApi;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.thing.Thing;
+import org.eclipse.smarthome.core.thing.ThingStatus;
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
+import org.openhab.binding.adaxheater.publicApi.AdaxRoom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The {@link AdaxAccountPoller} Responsible for polling the Adax cloud
@@ -68,7 +65,6 @@ public class AdaxAccountPoller {
                 TimeUnit.MILLISECONDS);
     }
 
-
     private Runnable getStatusRunnable = new Runnable() {
 
         @Override
@@ -80,114 +76,53 @@ public class AdaxAccountPoller {
 
                     logger.info("Attempting to go online");
 
-                    readAllZones();
-                    readAllHeaters();
+                    refreshAllRooms();
 
                     bridge.setStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE, null);
 
                     schedulePoller(POLL_INTERVAL_MS, true);
                 } else {
                     logger.info("Polling");
-                    readAllZones();
-                    readAllHeaters();
+                    refreshAllRooms();
                 }
             } catch (Exception e) {
                 logger.error("An exception occurred while communicating with the Adax cloud: '{}'", e.getMessage(), e);
                 bridge.setStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
                 schedulePoller(OFFLINE_POLL_INTERVAL_MS, false);
             }
-
         }
     };
 
-    private Map<Long, AdaxHeaterHandler> getAllHeaterHandlers() {
+    private Map<Integer, AdaxRoomHandler> getAllZoneHandlers() {
         List<Thing> things = bridge.getThing().getThings();
 
-        return things
-                .stream()
-                .filter(t -> t.getHandler() instanceof AdaxHeaterHandler)
-                .map(t -> (AdaxHeaterHandler) t.getHandler())
-                .collect(Collectors.toMap(AdaxHeaterHandler::getHeaterId, p -> p));
+        return things.stream().filter(t -> t.getHandler() instanceof AdaxRoomHandler)
+                .map(t -> (AdaxRoomHandler) t.getHandler())
+                .collect(Collectors.toMap(AdaxRoomHandler::getRoomId, p -> p));
     }
 
-    private Map<Long, AdaxZoneHandler> getAllZoneHandlers() {
-        List<Thing> things = bridge.getThing().getThings();
-
-        return things
-                .stream()
-                .filter(t -> t.getHandler() instanceof AdaxZoneHandler)
-                .map(t -> (AdaxZoneHandler) t.getHandler())
-                .collect(Collectors.toMap(AdaxZoneHandler::getZoneId, p -> p));
-    }
-
-    private void readAllZones() {
+    private void refreshAllRooms() {
         try {
-            Map<Long, AdaxZoneHandler> allZoneHandlers = getAllZoneHandlers();
 
-            if (!allZoneHandlers.isEmpty()) {
+            List<AdaxRoom> allRooms = bridge.getClient().getAllData().rooms;
 
-                List<Zone> allZones = bridge.getClient().getAllZones();
+            Map<Integer, AdaxRoomHandler> allRoomHandlers = getAllZoneHandlers();
 
-                allZones
-                        .stream()
-                        .filter(z -> z.getId() != null)
-                        .filter(z -> allZoneHandlers.containsKey(z.getId()))
-                        .forEach(zone -> {
+            if (!allRoomHandlers.isEmpty()) {
+
+                allRooms.stream()
+                        .filter(r -> allRoomHandlers.containsKey(r.getRoomId())).forEach(room -> {
                             try {
-                                AdaxZoneHandler zoneHandler = allZoneHandlers.get(zone.getId());
-
-                                zoneHandler.updateZoneData(zone);
-
+                                AdaxRoomHandler zoneHandler = allRoomHandlers.get(room.getRoomId());
+                                zoneHandler.updateRoomData(room);
                             } catch (Exception updateZoneEx) {
-                                logger.error("Error updating zone {} ", zone.getId(), updateZoneEx);
+                                logger.error("Error updating room {} ", room.getRoomId(), updateZoneEx);
                             }
                         });
             }
 
         } catch (Exception e) {
-            logger.error("error reading zones from ADAX.", e);
-        }
-    }
-
-    private void readAllHeaters() {
-        try {
-            Map<Long, AdaxZoneHandler> allZoneHandlers = getAllZoneHandlers();
-            Map<Long, AdaxHeaterHandler> allHeaterHandlers = getAllHeaterHandlers();
-
-            logger.info("readAllHeaters {} zones, {} heaters.", allZoneHandlers.size(), allHeaterHandlers.size());
-
-            if (!allZoneHandlers.isEmpty() || !allHeaterHandlers.isEmpty()) {
-
-                List<HeaterInfo> allHeaters = bridge.getClient().getAllHeaters();
-
-                //update zone handlers:
-                Map<AdaxZoneHandler, List<HeaterInfo>> heatersByZone = allHeaters
-                        .stream()
-                        .filter(h -> h.getZone() != null)
-                        .filter(h -> allZoneHandlers.containsKey(h.getZone()))
-                        .collect(Collectors.groupingBy(h -> allZoneHandlers.get(h.getZone())));
-
-                for (Map.Entry<AdaxZoneHandler, List<HeaterInfo>> zoneWithHeaters : heatersByZone.entrySet()) {
-                    zoneWithHeaters.getKey().updateHeaters(zoneWithHeaters.getValue());
-                }
-
-                //Update heater handlers:
-                allHeaters
-                        .stream()
-                        .filter(h -> h.getId() != null)
-                        .filter(h -> allHeaterHandlers.containsKey(h.getId()))
-                        .forEach(h -> {
-                            AdaxHeaterHandler heaterHandler = allHeaterHandlers.get(h.getId());
-                            try {
-                                heaterHandler.updateHeaterData(h);
-                            } catch (Exception updateHeaterEx) {
-                                logger.error("Error updating heater {} ", h.getId(), updateHeaterEx);
-                            }
-                        });
-            }
-
-        } catch (Exception e) {
-            logger.error("error reading zones from ADAX.", e);
+            logger.error("error reading rooms from ADAX.", e);
         }
     }
 }

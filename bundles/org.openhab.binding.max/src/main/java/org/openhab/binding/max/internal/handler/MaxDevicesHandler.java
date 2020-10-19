@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -19,6 +19,8 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -39,8 +41,10 @@ import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
+import org.eclipse.smarthome.core.thing.binding.ThingHandlerService;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
+import org.openhab.binding.max.actions.MaxDevicesActions;
 import org.openhab.binding.max.internal.command.CCommand;
 import org.openhab.binding.max.internal.command.QCommand;
 import org.openhab.binding.max.internal.command.SConfigCommand;
@@ -68,7 +72,6 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
 
     private String maxDeviceSerial;
     private String rfAddress;
-    private boolean forceRefresh = true;
     private boolean propertiesSet;
     private boolean configSet;
 
@@ -109,7 +112,6 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
             }
             propertiesSet = false;
             configSet = false;
-            forceRefresh = true;
             getMaxCubeBridgeHandler();
         } catch (Exception e) {
             logger.debug("Exception occurred during initialize : {}", e.getMessage(), e);
@@ -140,7 +142,6 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
     @Override
     public void thingUpdated(Thing thing) {
         configSet = false;
-        forceRefresh = true;
         super.thingUpdated(thing);
     }
 
@@ -195,6 +196,11 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
         }
     }
 
+    @Override
+    public Collection<Class<? extends ThingHandlerService>> getServices() {
+        return Collections.singleton(MaxDevicesActions.class);
+    }
+
     private void sendPropertyUpdate(Map<String, Object> configurationParameters, Map<String, Object> deviceProperties) {
         if (getMaxCubeBridgeHandler() == null) {
             logger.debug("MAX! Cube LAN gateway bridge handler not found. Cannot handle update without bridge.");
@@ -244,7 +250,7 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
     /**
      * sends the T command to the Cube to disassociate the device from the MAX! Cube.
      */
-    private void deviceDelete() {
+    public void deviceDelete() {
         MaxCubeBridgeHandler maxCubeBridge = getMaxCubeBridgeHandler();
         if (maxCubeBridge != null) {
             maxCubeBridge.sendDeviceDelete(maxDeviceSerial);
@@ -316,7 +322,6 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
             }
             this.bridgeHandler = (MaxCubeBridgeHandler) handler;
             this.bridgeHandler.registerDeviceStatusListener(this);
-            forceRefresh = true;
         }
         return this.bridgeHandler;
     }
@@ -329,7 +334,6 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
             return;
         }
         if (command instanceof RefreshType) {
-            forceRefresh = true;
             maxCubeBridge.handleCommand(channelUID, command);
             return;
         }
@@ -378,49 +382,42 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
                 || device.getType() == DeviceType.HeatingThermostatPlus)) {
             refreshActualCheck((HeatingThermostat) device);
         }
-        if (device.isUpdated() || forceRefresh) {
-            logger.debug("Updating states of {} {} ({}) id: {}", device.getType(), device.getName(),
-                    device.getSerialNumber(), getThing().getUID());
-            switch (device.getType()) {
-                case WallMountedThermostat: // fall-through
-                case HeatingThermostat: // fall-through
-                case HeatingThermostatPlus:
-                    updateState(new ChannelUID(getThing().getUID(), CHANNEL_LOCKED),
-                            ((HeatingThermostat) device).isPanelLocked() ? OpenClosedType.CLOSED : OpenClosedType.OPEN);
-                    updateState(new ChannelUID(getThing().getUID(), CHANNEL_SETTEMP),
-                            new QuantityType<>(((HeatingThermostat) device).getTemperatureSetpoint(), CELSIUS));
-                    updateState(new ChannelUID(getThing().getUID(), CHANNEL_MODE),
-                            new StringType(((HeatingThermostat) device).getModeString()));
-                    updateState(new ChannelUID(getThing().getUID(), CHANNEL_BATTERY),
-                            ((HeatingThermostat) device).getBatteryLow());
-                    updateState(new ChannelUID(getThing().getUID(), CHANNEL_VALVE),
-                            new DecimalType(((HeatingThermostat) device).getValvePosition()));
-                    double actualTemp = ((HeatingThermostat) device).getTemperatureActual();
-                    if (actualTemp != 0) {
-                        updateState(new ChannelUID(getThing().getUID(), CHANNEL_ACTUALTEMP),
-                                new QuantityType<>(actualTemp, CELSIUS));
-                    }
-                    break;
-                case ShutterContact:
-                    updateState(new ChannelUID(getThing().getUID(), CHANNEL_CONTACT_STATE),
-                            ((ShutterContact) device).getShutterState());
-                    updateState(new ChannelUID(getThing().getUID(), CHANNEL_BATTERY),
-                            ((ShutterContact) device).getBatteryLow());
-                    break;
-                case EcoSwitch:
-                    updateState(new ChannelUID(getThing().getUID(), CHANNEL_BATTERY),
-                            ((EcoSwitch) device).getBatteryLow());
-                    break;
-                default:
-                    logger.debug("Unhandled Device {}.", device.getType());
-                    break;
-            }
-            forceRefresh = false;
-            device.setUpdated(false);
-        } else {
-            logger.debug("No changes for {} {} ({}) id: {}", device.getType(), device.getName(),
-                    device.getSerialNumber(), getThing().getUID());
+        logger.debug("Updating states of {} {} ({}) id: {}", device.getType(), device.getName(),
+                device.getSerialNumber(), getThing().getUID());
+        switch (device.getType()) {
+            case WallMountedThermostat: // fall-through
+            case HeatingThermostat: // fall-through
+            case HeatingThermostatPlus:
+                updateState(new ChannelUID(getThing().getUID(), CHANNEL_LOCKED),
+                        ((HeatingThermostat) device).isPanelLocked() ? OpenClosedType.CLOSED : OpenClosedType.OPEN);
+                updateState(new ChannelUID(getThing().getUID(), CHANNEL_SETTEMP),
+                        new QuantityType<>(((HeatingThermostat) device).getTemperatureSetpoint(), CELSIUS));
+                updateState(new ChannelUID(getThing().getUID(), CHANNEL_MODE),
+                        new StringType(((HeatingThermostat) device).getModeString()));
+                updateState(new ChannelUID(getThing().getUID(), CHANNEL_BATTERY),
+                        ((HeatingThermostat) device).getBatteryLow());
+                updateState(new ChannelUID(getThing().getUID(), CHANNEL_VALVE),
+                        new DecimalType(((HeatingThermostat) device).getValvePosition()));
+                double actualTemp = ((HeatingThermostat) device).getTemperatureActual();
+                if (actualTemp != 0) {
+                    updateState(new ChannelUID(getThing().getUID(), CHANNEL_ACTUALTEMP),
+                            new QuantityType<>(actualTemp, CELSIUS));
+                }
+                break;
+            case ShutterContact:
+                updateState(new ChannelUID(getThing().getUID(), CHANNEL_CONTACT_STATE),
+                        ((ShutterContact) device).getShutterState());
+                updateState(new ChannelUID(getThing().getUID(), CHANNEL_BATTERY),
+                        ((ShutterContact) device).getBatteryLow());
+                break;
+            case EcoSwitch:
+                updateState(new ChannelUID(getThing().getUID(), CHANNEL_BATTERY), ((EcoSwitch) device).getBatteryLow());
+                break;
+            default:
+                logger.debug("Unhandled Device {}.", device.getType());
+                break;
         }
+        device.setUpdated(false);
     }
 
     private void refreshActualCheck(HeatingThermostat device) {
@@ -500,21 +497,12 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
         if (device.getSerialNumber().equals(maxDeviceSerial)) {
             bridgeHandler.unregisterDeviceStatusListener(this);
             bridgeHandler = null;
-            forceRefresh = true;
             updateStatus(ThingStatus.OFFLINE);
         }
     }
 
     @Override
     public void onDeviceAdded(Bridge bridge, Device device) {
-        forceRefresh = true;
-    }
-
-    /**
-     * Set the forceRefresh flag to ensure update when next data is coming
-     */
-    public void setForceRefresh() {
-        forceRefresh = true;
     }
 
     /**
@@ -540,7 +528,6 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
         logger.debug("Bridge Status updated to {} for device: {}", bridgeStatusInfo.getStatus(), getThing().getUID());
         if (!bridgeStatusInfo.getStatus().equals(ThingStatus.ONLINE)) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
-            forceRefresh = true;
         }
     }
 
@@ -549,18 +536,35 @@ public class MaxDevicesHandler extends BaseThingHandler implements DeviceStatusL
      */
     private void setDeviceConfiguration(Device device) {
         try {
+            boolean config_changed = false;
             logger.debug("MAX! {} {} configuration update", device.getType(), device.getSerialNumber());
             Configuration configuration = editConfiguration();
-            configuration.put(PROPERTY_ROOMNAME, device.getRoomName());
-            configuration.put(PROPERTY_ROOMID, new BigDecimal(device.getRoomId()));
-            configuration.put(PROPERTY_DEVICENAME, device.getName());
-            configuration.put(PROPERTY_RFADDRESS, device.getRFAddress());
-            // Add additional device config entries
+            if (!device.getRoomName().equalsIgnoreCase((String) getConfig().get(PROPERTY_ROOMNAME))) {
+                configuration.put(PROPERTY_ROOMNAME, device.getRoomName());
+                config_changed = true;
+            }
+            if (getConfig().get(PROPERTY_ROOMID) == null || !(new BigDecimal(device.getRoomId())
+                    .compareTo((BigDecimal) getConfig().get(PROPERTY_ROOMID)) == 0)) {
+                configuration.put(PROPERTY_ROOMID, new BigDecimal(device.getRoomId()));
+                config_changed = true;
+            }
+            if (!device.getName().equalsIgnoreCase((String) getConfig().get(PROPERTY_DEVICENAME))) {
+                configuration.put(PROPERTY_DEVICENAME, device.getName());
+                config_changed = true;
+            }
+            if (!device.getRFAddress().equalsIgnoreCase((String) getConfig().get(PROPERTY_RFADDRESS))) {
+                configuration.put(PROPERTY_RFADDRESS, device.getRFAddress());
+                config_changed = true;
+            }
             for (Map.Entry<String, Object> entry : device.getProperties().entrySet()) {
                 configuration.put(entry.getKey(), entry.getValue());
             }
-            updateConfiguration(configuration);
-            logger.debug("Config updated: {}", configuration.getProperties());
+            if (config_changed) {
+                updateConfiguration(configuration);
+                logger.debug("Config updated: {}", configuration.getProperties());
+            } else {
+                logger.debug("MAX! {} {} no updated required.", device.getType(), device.getSerialNumber());
+            }
             configSet = true;
         } catch (Exception e) {
             logger.debug("Exception occurred during configuration edit: {}", e.getMessage(), e);

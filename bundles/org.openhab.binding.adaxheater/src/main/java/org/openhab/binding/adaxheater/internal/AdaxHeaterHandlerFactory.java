@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.auth.client.oauth2.OAuthFactory;
 import org.eclipse.smarthome.core.thing.Bridge;
@@ -53,12 +52,12 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
 
     static {
         SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_ACCOUNT);
-        SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_ZONE);
-        SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_HEATER);
+        SUPPORTED_THING_TYPES_UIDS.add(THING_TYPE_ROOM);
     }
 
     @Activate
-    public AdaxHeaterHandlerFactory(@Reference OAuthFactory oAuthFactory, @Reference HttpClientFactory httpClientFactory) {
+    public AdaxHeaterHandlerFactory(@Reference OAuthFactory oAuthFactory,
+            @Reference HttpClientFactory httpClientFactory) {
         this.oAuthFactory = oAuthFactory;
         httpClient = httpClientFactory.getCommonHttpClient();
     }
@@ -81,10 +80,8 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
             AdaxAccountHandler accountHandler = new AdaxAccountHandler((Bridge) thing, oAuthFactory, httpClient);
             accountHandlers.put(thing.getUID(), accountHandler);
             return accountHandler;
-        } else if (thingTypeUID.equals(THING_TYPE_ZONE)) {
-            return new AdaxZoneHandler(thing);
-        } else if (thingTypeUID.equals(THING_TYPE_HEATER)) {
-            return new AdaxHeaterHandler(thing);
+        } else if (thingTypeUID.equals(THING_TYPE_ROOM)) {
+            return new AdaxRoomHandler(thing);
         } else {
             logger.error("Unknown thing type requested: {}", thingTypeUID);
             return null;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -149,6 +149,8 @@ public class DSMRBridgeHandler extends BaseBridgeHandler implements DSMREventLis
         this.dsmrDevice = dsmrDevice; // otherwise Eclipse will give a null pointer error on the next line :-(
         dsmrDeviceRunnable = new DSMRDeviceRunnable(dsmrDevice, this);
         dsmrDeviceThread = new Thread(dsmrDeviceRunnable);
+        dsmrDeviceThread.setName("OH-binding-" + getThing().getUID());
+        dsmrDeviceThread.setDaemon(true);
         dsmrDeviceThread.start();
         watchdog = scheduler.scheduleWithFixedDelay(this::alive, receivedTimeoutNanos, receivedTimeoutNanos,
                 TimeUnit.NANOSECONDS);

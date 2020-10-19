@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -14,7 +14,7 @@ package org.openhab.binding.logreader.internal.handler;
 
 import static org.openhab.binding.logreader.internal.LogReaderBindingConstants.*;
 
-import java.util.Calendar;
+import java.time.ZonedDateTime;
 import java.util.regex.PatternSyntaxException;
 
 import org.eclipse.smarthome.core.library.types.DateTimeType;
@@ -104,7 +104,7 @@ public class LogHandler extends BaseThingHandler implements FileReaderListener {
 
         try {
             fileReader.registerListener(this);
-            fileReader.start(configuration.filePath, configuration.refreshRate, scheduler);
+            fileReader.start(configuration.filePath, configuration.refreshRate);
             updateStatus(ThingStatus.ONLINE);
         } catch (Exception e) {
             logger.debug("Exception occurred during initalization: {}. ", e.getMessage(), e);
@@ -162,7 +162,7 @@ public class LogHandler extends BaseThingHandler implements FileReaderListener {
     @Override
     public void fileRotated() {
         logger.debug("Log rotated");
-        updateChannelIfLinked(CHANNEL_LOGROTATED, new DateTimeType(Calendar.getInstance()));
+        updateChannelIfLinked(CHANNEL_LOGROTATED, new DateTimeType(ZonedDateTime.now()));
     }
 
     @Override

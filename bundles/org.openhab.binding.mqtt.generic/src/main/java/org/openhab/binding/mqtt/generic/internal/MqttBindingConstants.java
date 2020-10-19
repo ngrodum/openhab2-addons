@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -32,6 +32,7 @@ public class MqttBindingConstants {
     // Generic thing channel types
     public static final String COLOR_RGB = "colorRGB";
     public static final String COLOR_HSB = "colorHSB";
+    public static final String COLOR = "color";
     public static final String CONTACT = "contact";
     public static final String DIMMER = "dimmer";
     public static final String NUMBER = "number";
@@ -41,4 +42,5 @@ public class MqttBindingConstants {
     public static final String LOCATION = "location";
     public static final String DATETIME = "datetime";
     public static final String ROLLERSHUTTER = "rollershutter";
+    public static final String TRIGGER = "trigger";
 }

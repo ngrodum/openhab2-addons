@@ -12,11 +12,6 @@
  */
 package org.openhab.binding.adaxheater.internal;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
-
-import java.math.BigDecimal;
-
 /**
  * The {@link AdaxHeaterConfiguration} class contains fields mapping thing configuration parameters.
  *

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -63,6 +63,7 @@ public interface BluetoothAdapter extends Identifiable<ThingUID> {
      * @return the {@link BluetoothAddress} of the adapter
      * @throws IllegalStateException if the adapter is not initialized
      */
+    @Nullable
     BluetoothAddress getAddress();
 
     /**
@@ -72,8 +73,30 @@ public interface BluetoothAdapter extends Identifiable<ThingUID> {
      *
      * @param address the {@link BluetoothAddress} to retrieve
      * @return the {@link BluetoothDevice}
-     * @throws IllegalArgumentException if the address is no valid hardware address
      */
     BluetoothDevice getDevice(BluetoothAddress address);
 
+    /**
+     * Gets the location of this adapter, as specified in Thing.getLocation()
+     *
+     * @return the location of this adapter
+     */
+    @Nullable
+    String getLocation();
+
+    /**
+     * Gets the label for this adapter, as specified in Thing.getLabel()
+     *
+     * @return the location of this adapter
+     */
+    @Nullable
+    String getLabel();
+
+    /**
+     * Checks if this adapter has a device with the given {@link BluetoothAddress}.
+     *
+     * @param address the {@link BluetoothAddress} to check for
+     * @return true if this adapter has a {@link BluetoothDevice} with that address
+     */
+    boolean hasHandlerForDevice(BluetoothAddress address);
 }

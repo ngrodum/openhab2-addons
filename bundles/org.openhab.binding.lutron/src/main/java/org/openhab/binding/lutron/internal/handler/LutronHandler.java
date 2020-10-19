@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.lutron.internal.handler;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
@@ -28,8 +30,10 @@ import org.slf4j.LoggerFactory;
  * Base type for all Lutron thing handlers.
  *
  * @author Allan Tong - Initial contribution
- * @author Bob Adair - Added methods for status and state management
+ * @author Bob Adair - Added additional commands and methods for status and state management
+ *
  */
+@NonNullByDefault
 public abstract class LutronHandler extends BaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(LutronHandler.class);
 
@@ -54,7 +58,7 @@ public abstract class LutronHandler extends BaseThingHandler {
     protected void thingOfflineNotify() {
     }
 
-    protected IPBridgeHandler getBridgeHandler() {
+    protected @Nullable IPBridgeHandler getBridgeHandler() {
         Bridge bridge = getBridge();
 
         return bridge == null ? null : (IPBridgeHandler) bridge.getHandler();
@@ -105,6 +109,16 @@ public abstract class LutronHandler extends BaseThingHandler {
         sendCommand(new LutronCommand(LutronOperation.EXECUTE, LutronCommandType.MODE, getIntegrationId(), parameters));
     }
 
+    protected void sysvar(Object... parameters) {
+        sendCommand(
+                new LutronCommand(LutronOperation.EXECUTE, LutronCommandType.SYSVAR, getIntegrationId(), parameters));
+    }
+
+    protected void shadegrp(Object... parameters) {
+        sendCommand(
+                new LutronCommand(LutronOperation.EXECUTE, LutronCommandType.SHADEGRP, getIntegrationId(), parameters));
+    }
+
     protected void queryOutput(Object... parameters) {
         sendCommand(new LutronCommand(LutronOperation.QUERY, LutronCommandType.OUTPUT, getIntegrationId(), parameters));
     }
@@ -122,4 +136,12 @@ public abstract class LutronHandler extends BaseThingHandler {
         sendCommand(new LutronCommand(LutronOperation.QUERY, LutronCommandType.MODE, getIntegrationId(), parameters));
     }
 
+    protected void querySysvar(Object... parameters) {
+        sendCommand(new LutronCommand(LutronOperation.QUERY, LutronCommandType.SYSVAR, getIntegrationId(), parameters));
+    }
+
+    protected void queryShadegrp(Object... parameters) {
+        sendCommand(
+                new LutronCommand(LutronOperation.QUERY, LutronCommandType.SHADEGRP, getIntegrationId(), parameters));
+    }
 }

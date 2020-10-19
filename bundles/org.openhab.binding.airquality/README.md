@@ -54,6 +54,7 @@ The AirQuality information that is retrieved is available as these channels:
 | Channel ID      | Item Type            | Description                                  |
 |-----------------|----------------------|----------------------------------------------|
 | aqiLevel        | Number               | Air Quality Index                            |
+| aqiColor        | Color                | Color associated to given AQI Index.         |
 | aqiDescription  | String               | AQI Description                              |
 | locationName    | String               | Nearest measuring station location           |
 | stationId       | Number               | Measuring station ID                         |
@@ -68,7 +69,7 @@ The AirQuality information that is retrieved is available as these channels:
 | temperature     | Number:Temperature   | Temperature in Celsius degrees               |
 | pressure        | Number:Pressure      | Pressure level                               |
 | humidity        | Number:Dimensionless | Humidity level                               |
-| dominentPol     | String               | Dominent Polutor                             |
+| dominentpol     | String               | Dominent Polutor                             |
 
 `AQI Description` item provides a human-readable output that can be interpreted e.g. by MAP transformation.
 

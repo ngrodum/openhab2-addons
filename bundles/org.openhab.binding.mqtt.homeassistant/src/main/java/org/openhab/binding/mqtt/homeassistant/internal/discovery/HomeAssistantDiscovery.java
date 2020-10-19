@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -17,11 +17,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -65,7 +65,7 @@ public class HomeAssistantDiscovery extends AbstractMQTTDiscovery {
     private final Logger logger = LoggerFactory.getLogger(HomeAssistantDiscovery.class);
     protected final Map<String, Set<HaID>> componentsPerThingID = new TreeMap<>();
     protected final Map<String, ThingUID> thingIDPerTopic = new TreeMap<>();
-    protected final Map<String, DiscoveryResult> results = new TreeMap<>();
+    protected final Map<String, DiscoveryResult> results = new ConcurrentHashMap<>();
 
     private @Nullable ScheduledFuture<?> future;
     private final Gson gson;
@@ -129,6 +129,8 @@ public class HomeAssistantDiscovery extends AbstractMQTTDiscovery {
     @Override
     public void receivedMessage(ThingUID connectionBridge, MqttBrokerConnection connection, String topic,
             byte[] payload) {
+        resetTimeout();
+
         // For HomeAssistant we need to subscribe to a wildcard topic, because topics can either be:
         // homeassistant/<component>/<node_id>/<object_id>/config OR
         // homeassistant/<component>/<object_id>/config.
@@ -163,36 +165,32 @@ public class HomeAssistantDiscovery extends AbstractMQTTDiscovery {
         thingIDPerTopic.put(topic, thingUID);
 
         // We need to keep track of already found component topics for a specific thing
-        Set<HaID> components = componentsPerThingID.computeIfAbsent(thingID, key -> new HashSet<>());
+        Set<HaID> components = componentsPerThingID.computeIfAbsent(thingID, key -> ConcurrentHashMap.newKeySet());
         components.add(haID);
 
         final String componentNames = components.stream().map(id -> id.component)
                 .map(c -> HA_COMP_TO_NAME.getOrDefault(c, c)).collect(Collectors.joining(", "));
 
-        final List<String> topics = components.stream().map(id -> id.toShortTopic()).collect(Collectors.toList());
+        final List<String> topics = components.stream().map(HaID::toShortTopic).collect(Collectors.toList());
 
         Map<String, Object> properties = new HashMap<>();
         HandlerConfiguration handlerConfig = new HandlerConfiguration(haID.baseTopic, topics);
         properties = handlerConfig.appendToProperties(properties);
         properties = config.appendToProperties(properties);
 
-        synchronized (results) {
-            // Because we need the new properties map with the updated "components" list
-            results.put(thingUID.getAsString(),
-                    DiscoveryResultBuilder.create(thingUID).withProperties(properties)
-                            .withRepresentationProperty("objectid").withBridge(connectionBridge)
-                            .withLabel(config.getThingName() + " (" + componentNames + ")").build());
-        }
+        // Because we need the new properties map with the updated "components" list
+        results.put(thingUID.getAsString(),
+                DiscoveryResultBuilder.create(thingUID).withProperties(properties).withRepresentationProperty(thingID)
+                        .withBridge(connectionBridge).withLabel(config.getThingName() + " (" + componentNames + ")")
+                        .build());
     }
 
     protected void publishResults() {
         Collection<DiscoveryResult> localResults;
 
-        synchronized (results) {
-            localResults = new ArrayList<>(results.values());
-            results.clear();
-            componentsPerThingID.clear();
-        }
+        localResults = new ArrayList<>(results.values());
+        results.clear();
+        componentsPerThingID.clear();
         for (DiscoveryResult result : localResults) {
             final ThingTypeUID typeID = result.getThingTypeUID();
             ThingType type = typeProvider.derive(typeID, MqttBindingConstants.HOMEASSISTANT_MQTT_THING).build();
@@ -220,5 +218,4 @@ public class HomeAssistantDiscovery extends AbstractMQTTDiscovery {
             }
         }
     }
-
 }

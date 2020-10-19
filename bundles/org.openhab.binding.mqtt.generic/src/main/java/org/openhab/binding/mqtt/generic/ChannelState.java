@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -14,7 +14,6 @@ package org.openhab.binding.mqtt.generic;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Formatter;
 import java.util.IllegalFormatException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -25,11 +24,13 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.TypeParser;
 import org.eclipse.smarthome.io.transport.mqtt.MqttBrokerConnection;
 import org.eclipse.smarthome.io.transport.mqtt.MqttMessageSubscriber;
+import org.openhab.binding.mqtt.generic.values.TextValue;
 import org.openhab.binding.mqtt.generic.values.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,8 @@ public class ChannelState implements MqttMessageSubscriber {
     private @Nullable ChannelStateUpdateListener channelStateUpdateListener;
     protected boolean hasSubscribed = false;
     private @Nullable ScheduledFuture<?> scheduledFuture;
-    private CompletableFuture<@Nullable Void> future = new CompletableFuture<>();
+    private CompletableFuture<@Nullable Void> future = CompletableFuture.completedFuture(null);
+    private final Object futureLock = new Object();
 
     /**
      * Creates a new channel state.
@@ -158,8 +160,7 @@ public class ChannelState implements MqttMessageSubscriber {
             if (transformedValue != null) {
                 strValue = transformedValue;
             } else {
-                logger.debug("Transformation '{}' returned null on '{}', discarding message", strValue,
-                        t.serviceName);
+                logger.debug("Transformation '{}' returned null on '{}', discarding message", strValue, t.serviceName);
                 receivedOrTimeout();
                 return;
             }
@@ -287,20 +288,21 @@ public class ChannelState implements MqttMessageSubscriber {
      */
     public CompletableFuture<@Nullable Void> start(MqttBrokerConnection connection, ScheduledExecutorService scheduler,
             int timeout) {
-        // if the connection is still the same, the subscription is still present, otherwise we need to renew
-        if (hasSubscribed && connection.equals(this.connection)) {
-            return CompletableFuture.completedFuture(null);
-        } else {
+        synchronized (futureLock) {
+            // if the connection is still the same, the subscription is still present, otherwise we need to renew
+            if (hasSubscribed || !future.isDone() && connection.equals(this.connection)) {
+                return future;
+            }
             hasSubscribed = false;
+
+            this.connection = connection;
+
+            if (StringUtils.isBlank(config.stateTopic)) {
+                return CompletableFuture.completedFuture(null);
+            }
+
+            this.future = new CompletableFuture<>();
         }
-
-        this.connection = connection;
-
-        if (StringUtils.isBlank(config.stateTopic)) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        this.future = new CompletableFuture<>();
         connection.subscribe(config.stateTopic, this).thenRun(() -> {
             hasSubscribed = true;
             logger.debug("Subscribed channel {} to topic: {}", this.channelUID, config.stateTopic);
@@ -332,7 +334,7 @@ public class ChannelState implements MqttMessageSubscriber {
     public CompletableFuture<Boolean> publishValue(Command command) {
         cachedValue.update(command);
 
-        String mqttCommandValue = cachedValue.getMQTTpublishValue();
+        Value mqttCommandValue = cachedValue;
 
         final MqttBrokerConnection connection = this.connection;
 
@@ -352,9 +354,12 @@ public class ChannelState implements MqttMessageSubscriber {
 
         // Outgoing transformations
         for (ChannelStateTransformation t : transformationsOut) {
-            String transformedValue = t.processValue(mqttCommandValue);
+            String commandString = mqttCommandValue.getMQTTpublishValue(null);
+            String transformedValue = t.processValue(commandString);
             if (transformedValue != null) {
-                mqttCommandValue = transformedValue;
+                Value textValue = new TextValue();
+                textValue.update(new StringType(transformedValue));
+                mqttCommandValue = textValue;
             } else {
                 logger.debug("Transformation '{}' returned null on '{}', discarding message", mqttCommandValue,
                         t.serviceName);
@@ -362,19 +367,23 @@ public class ChannelState implements MqttMessageSubscriber {
             }
         }
 
+        String commandString;
+
         // Formatter: Applied before the channel state value is published to the MQTT broker.
         if (config.formatBeforePublish.length() > 0) {
-            try (Formatter formatter = new Formatter()) {
-                Formatter format = formatter.format(config.formatBeforePublish, mqttCommandValue);
-                mqttCommandValue = format.toString();
+            try {
+                commandString = mqttCommandValue.getMQTTpublishValue(config.formatBeforePublish);
             } catch (IllegalFormatException e) {
                 logger.debug("Format pattern incorrect for {}", channelUID, e);
+                commandString = mqttCommandValue.getMQTTpublishValue(null);
             }
+        } else {
+            commandString = mqttCommandValue.getMQTTpublishValue(null);
         }
 
         int qos = (config.qos != null) ? config.qos : connection.getQos();
 
-        return connection.publish(config.commandTopic, mqttCommandValue.getBytes(), qos, config.retained);
+        return connection.publish(config.commandTopic, commandString.getBytes(), qos, config.retained);
     }
 
     /**
@@ -404,5 +413,4 @@ public class ChannelState implements MqttMessageSubscriber {
     public void setConnection(MqttBrokerConnection connection) {
         this.connection = connection;
     }
-
 }

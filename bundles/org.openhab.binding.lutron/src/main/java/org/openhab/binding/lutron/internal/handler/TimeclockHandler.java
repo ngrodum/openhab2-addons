@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -14,8 +14,12 @@ package org.openhab.binding.lutron.internal.handler;
 
 import static org.openhab.binding.lutron.internal.LutronBindingConstants.*;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Calendar;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.DateTimeType;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.thing.Bridge;
@@ -34,6 +38,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Bob Adair - Initial contribution
  */
+@NonNullByDefault
 public class TimeclockHandler extends LutronHandler {
     private static final Integer ACTION_CLOCKMODE = 1;
     private static final Integer ACTION_SUNRISE = 2;
@@ -142,7 +147,7 @@ public class TimeclockHandler extends LutronHandler {
         }
     }
 
-    private Calendar parseLutronTime(final String timeString) {
+    private @Nullable Calendar parseLutronTime(final String timeString) {
         Integer hour, minute;
         Calendar calendar = Calendar.getInstance();
         try {
@@ -177,13 +182,15 @@ public class TimeclockHandler extends LutronHandler {
             } else if (parameters.length >= 2 && ACTION_SUNRISE.toString().equals(parameters[0])) {
                 Calendar calendar = parseLutronTime(parameters[1]);
                 if (calendar != null) {
-                    updateState(CHANNEL_SUNRISE, new DateTimeType(calendar));
+                    updateState(CHANNEL_SUNRISE,
+                            new DateTimeType(ZonedDateTime.ofInstant(calendar.toInstant(), ZoneId.systemDefault())));
                 }
 
             } else if (parameters.length >= 2 && ACTION_SUNSET.toString().equals(parameters[0])) {
                 Calendar calendar = parseLutronTime(parameters[1]);
                 if (calendar != null) {
-                    updateState(CHANNEL_SUNSET, new DateTimeType(calendar));
+                    updateState(CHANNEL_SUNSET,
+                            new DateTimeType(ZonedDateTime.ofInstant(calendar.toInstant(), ZoneId.systemDefault())));
                 }
 
             } else if (parameters.length >= 2 && ACTION_EXECEVENT.toString().equals(parameters[0])) {
@@ -204,5 +211,4 @@ public class TimeclockHandler extends LutronHandler {
             return;
         }
     }
-
 }
