@@ -47,26 +47,28 @@ public class AdaxClientApi {
     public AdaxAccountData getAllData() {
         try {
             AdaxAccountData data = executeGet(API_URL + "/rest/v1/content/", AdaxAccountData.class);
+
+            logger.info("got data:" + data);
+
+            logger.info("got data rooms:" + data.rooms);
+
+            logger.info("got data homes:" + data.homes);
+
+            logger.info("got data devices:" + data.devices);
+
             return data;
         } catch (IOException e) {
+            logger.error("Error getting all data (io)", e);
             e.printStackTrace();
         } catch (AuthenticationException e) {
-            e.printStackTrace();
+            logger.error("Error getting all data (auth)", e);
         } catch (AdaxClientApiException e) {
-            e.printStackTrace();
+            logger.error("Error getting all data (api)", e);
         }
         return null;
     }
 
     public void setRoomTargetTemp(int roomId, int temp) {
-    }
-
-    public AdaxDevice getDevice(AdaxAccountData aad, int deviceId) {
-        return null;
-    }
-
-    public AdaxRoom getRoom(AdaxAccountData aad, int roomId) {
-        return null;
     }
 
     /**
@@ -104,6 +106,9 @@ public class AdaxClientApi {
                     .header(HttpHeader.AUTHORIZATION, BEARER + accessTokenResponse.getAccessToken())
                     .timeout(HTTP_CLIENT_TIMEOUT_SECONDS, TimeUnit.SECONDS).send();
         } catch (InterruptedException | TimeoutException | ExecutionException e) {
+
+            logger.error("YIKES WHILE DOING REQUEST !!!!!! :" + e);
+
             throw new IOException(e);
         }
         handleResponseErrors(response, request.getURI());

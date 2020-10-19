@@ -26,4 +26,9 @@ public class AdaxHeaterConfiguration {
     public String username;
 
     public String password;
+
+    @Override
+    public String toString() {
+        return "AdaxHeaterConfiguration{" + "username='" + username + '\'' + '}';
+    }
 }

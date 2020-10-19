@@ -16,6 +16,7 @@ import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -62,7 +63,7 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
         httpClient = httpClientFactory.getCommonHttpClient();
     }
 
-    public final static HashMap<ThingUID, AdaxAccountHandler> accountHandlers = new HashMap(1);
+    public final static Map<ThingUID, AdaxAccountHandler> accountHandlers = new HashMap<>(1);
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {

@@ -53,8 +53,11 @@ public class AdaxAccountPoller {
     public synchronized void schedulePoller(int initialDelayMs, boolean online) {
 
         try {
-            if (getStatusJob != null && !getStatusJob.isCancelled()) {
-                getStatusJob.cancel(false);
+            ScheduledFuture<?> lastJob = getStatusJob;
+            if (lastJob != null) {
+                if (!lastJob.isCancelled()) {
+                    lastJob.cancel(false);
+                }
             }
         } catch (Exception e) {
             logger.warn("Failed to cancel getStatusJob:{}", e.getMessage());
@@ -110,15 +113,14 @@ public class AdaxAccountPoller {
 
             if (!allRoomHandlers.isEmpty()) {
 
-                allRooms.stream()
-                        .filter(r -> allRoomHandlers.containsKey(r.getRoomId())).forEach(room -> {
-                            try {
-                                AdaxRoomHandler zoneHandler = allRoomHandlers.get(room.getRoomId());
-                                zoneHandler.updateRoomData(room);
-                            } catch (Exception updateZoneEx) {
-                                logger.error("Error updating room {} ", room.getRoomId(), updateZoneEx);
-                            }
-                        });
+                allRooms.stream().filter(r -> allRoomHandlers.containsKey(r.getRoomId())).forEach(room -> {
+                    try {
+                        AdaxRoomHandler zoneHandler = allRoomHandlers.get(room.getRoomId());
+                        zoneHandler.updateRoomData(room);
+                    } catch (Exception updateZoneEx) {
+                        logger.error("Error updating room {} ", room.getRoomId(), updateZoneEx);
+                    }
+                });
             }
 
         } catch (Exception e) {
