@@ -78,7 +78,7 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (thingTypeUID.equals(THING_TYPE_ACCOUNT)) {
-            AdaxAccountHandler accountHandler = new AdaxAccountHandler((Bridge) thing, oAuthFactory, httpClient);
+            AdaxAccountHandler accountHandler = new AdaxAccountHandler((Bridge) thing, httpClient);
             accountHandlers.put(thing.getUID(), accountHandler);
             return accountHandler;
         } else if (thingTypeUID.equals(THING_TYPE_ROOM)) {

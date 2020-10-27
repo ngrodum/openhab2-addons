@@ -12,24 +12,11 @@
  */
 package org.openhab.binding.adaxheater.internal;
 
-import java.io.IOException;
-import java.text.DateFormat;
-import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.Date;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.DateUtils;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.smarthome.core.auth.client.oauth2.AccessTokenRefreshListener;
-import org.eclipse.smarthome.core.auth.client.oauth2.AccessTokenResponse;
-import org.eclipse.smarthome.core.auth.client.oauth2.OAuthClientService;
-import org.eclipse.smarthome.core.auth.client.oauth2.OAuthException;
-import org.eclipse.smarthome.core.auth.client.oauth2.OAuthFactory;
-import org.eclipse.smarthome.core.auth.client.oauth2.OAuthResponseException;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -38,13 +25,8 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.openhab.binding.adaxheater.publicApi.AdaxClientApi;
-import org.openhab.binding.adaxheater.publicApi.AdaxJwtAccessToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * The {@link AdaxAccountHandler} is responsible for handling commands, which are
@@ -52,23 +34,17 @@ import com.google.gson.JsonSyntaxException;
  *
  * @author Nicolai Grodum - Initial contribution
  */
-public class AdaxAccountHandler extends BaseBridgeHandler implements AccessTokenRefreshListener {
+public class AdaxAccountHandler extends BaseBridgeHandler {
 
-    private final OAuthFactory oAuthFactory;
     private final HttpClient httpClient;
     private @Nullable AdaxClientApi client;
     private @Nullable AdaxAccountPoller poller;
     private final Logger logger = LoggerFactory.getLogger(AdaxAccountHandler.class);
 
-    private final String API_URL_TOKEN = "https://api-1.adax.no/client-api/auth/token";
-    private static final int TOKEN_EXPIRES_IN_BUFFER_SECONDS = 120;
-    private final Gson gson = new GsonBuilder().create();
-
     private @Nullable AdaxHeaterConfiguration config;
 
-    public AdaxAccountHandler(Bridge bridge, final OAuthFactory oAuthFactory, final HttpClient httpClient) {
+    public AdaxAccountHandler(Bridge bridge, final HttpClient httpClient) {
         super(bridge);
-        this.oAuthFactory = oAuthFactory;
         this.httpClient = httpClient;
     }
 
@@ -153,19 +129,15 @@ public class AdaxAccountHandler extends BaseBridgeHandler implements AccessToken
         if (client == null && config != null) {
 
             if (checkConfig(config)) {
-                final OAuthClientService oAuthClientService = oAuthFactory.createOAuthClientService(
-                        thing.getUID().getAsString(), API_URL_TOKEN, null, config.username, config.password, null,
-                        true);
 
-                oAuthClientService.addAccessTokenRefreshListener(this);
+                client = new AdaxClientApi(config.username, config.password, this.httpClient);
 
-                client = new AdaxClientApi(oAuthClientService, this.httpClient);
                 this.client = client;
                 logger.warn("************************************************  Initialized client.");
             }
         }
 
-        if (client != null && isApiAuthorized(client.oAuthClientService)) {
+        if (client != null && client.isApiAuthorized()) {
             logger.warn("************************************************  Client is authenticated!");
 
             updateStatus(ThingStatus.ONLINE);
@@ -173,93 +145,6 @@ public class AdaxAccountHandler extends BaseBridgeHandler implements AccessToken
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR);
         }
         return client;
-    }
-
-    public boolean isApiAuthorized(OAuthClientService oAuthClientService) {
-        boolean isAuthorized = false;
-        try {
-            AdaxHeaterConfiguration config = this.config;
-            AccessTokenResponse localAccessTokenResponse = oAuthClientService.getAccessTokenResponse();
-            if (localAccessTokenResponse != null) {
-                logger.trace("API: Got AccessTokenResponse from OAuth service: {}", localAccessTokenResponse);
-
-                if (localAccessTokenResponse.isExpired(LocalDateTime.now(), TOKEN_EXPIRES_IN_BUFFER_SECONDS)
-                        || hasTokenExpired(localAccessTokenResponse.getAccessToken(),
-                                TOKEN_EXPIRES_IN_BUFFER_SECONDS)) {
-                    logger.debug("API: Token is expiring soon. Refreshing it now");
-                    localAccessTokenResponse = oAuthClientService.refreshToken();
-                    localAccessTokenResponse.setCreatedOn(LocalDateTime.now());// This must be stored in the token!!
-                }
-                isAuthorized = true;
-            } else if (config != null) {
-                logger.info("API: Didn't get an AccessTokenResponse from OAuth service - doing auth!!!");
-                AccessTokenResponse atr = oAuthClientService
-                        .getAccessTokenByResourceOwnerPasswordCredentials(config.username, config.password, null);
-
-                atr.setCreatedOn(LocalDateTime.now());// This must be stored in the token!!
-                logger.debug("GOT ATR." + atr);
-            }
-        } catch (OAuthException | IOException | RuntimeException e) {
-            logger.error("API: Got exception trying to get access token from OAuth service", e);
-        } catch (OAuthResponseException e) {
-            logger.error("API: Exception getting access token: error='{}', description='{}'", e.getError(),
-                    e.getErrorDescription());
-        }
-        return isAuthorized;
-    }
-
-    /**
-     * Extract the expiry date in the user provided token for the hobby API. Log warnings and errors if the token is
-     * close to expiry or expired.
-     *
-     * @return true if token has expired or cannot be verifed
-     */
-    private boolean hasTokenExpired(String token, int secondsBuffer) {
-
-        AdaxJwtAccessToken jwtToken = null;
-
-        String[] tokenArray = token.split("\\.");
-
-        if (tokenArray.length == 3) {
-            String tokenPayload = new String(Base64.getDecoder().decode(tokenArray[1]));
-
-            logger.debug("Adax: JWT token payload {}", tokenPayload);
-
-            try {
-                jwtToken = gson.fromJson(tokenPayload, AdaxJwtAccessToken.class);
-            } catch (JsonSyntaxException e) {
-                logger.debug("Adax: unexpected token payload {}", tokenPayload);
-            } catch (NoSuchElementException ignore) {
-                // Ignore if exp not present in response, this should not happen in token payload response
-                logger.trace("Adax: no expiry date found in payload {}", tokenPayload);
-            }
-        }
-
-        if (jwtToken != null) {
-
-            logger.debug("Adax: jwtToken.exp {} {} {} {}", jwtToken.exp, jwtToken.iat, jwtToken.iss, jwtToken.sub);
-            Date expiryDate;
-            try {
-                long epoch = jwtToken.exp * 1000; // convert to milliseconds
-                expiryDate = new Date(epoch);
-            } catch (NumberFormatException e) {
-                logger.debug("Adax: token expiry not valid {}", jwtToken.exp);
-                return false;
-            }
-
-            Date now = new Date();
-            if (expiryDate.before(DateUtils.addSeconds(now, secondsBuffer))) {
-                logger.warn("Adax: API token expired, was valid until {}",
-                        DateFormat.getDateInstance().format(expiryDate));
-                return true;
-            } else {
-                logger.info("Adax: API token still valid, valid until {}",
-                        DateFormat.getDateInstance().format(expiryDate));
-            }
-            return false;
-        }
-
-        return false;
     }
 
     public void setStatus(ThingStatus status, ThingStatusDetail statusDetail, String message) {
@@ -273,10 +158,5 @@ public class AdaxAccountHandler extends BaseBridgeHandler implements AccessToken
         return !things.isEmpty()
                 && things.stream().anyMatch(t -> t.getThingTypeUID().equals(AdaxHeaterBindingConstants.THING_TYPE_ROOM)
                         && t.getUID().getId() == String.valueOf(roomId));
-    }
-
-    @Override
-    public void onAccessTokenResponse(AccessTokenResponse accessTokenResponse) {
-        logger.error("account handler onAccessTokenResponse" + accessTokenResponse);
     }
 }

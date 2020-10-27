@@ -12,8 +12,8 @@
  */
 package org.openhab.binding.adaxheater.internal;
 
-import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants.CHANNEL_ZONE_CURRENT_TEMP;
-import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants.CHANNEL_ZONE_TARGET_TEMP;
+import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants.CHANNEL_ROOM_CURRENT_TEMP;
+import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants.CHANNEL_ROOM_TARGET_TEMP;
 
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.thing.Bridge;
@@ -53,7 +53,7 @@ public class AdaxRoomHandler extends BaseThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
 
-        // logger.info("ADAX handleCommand:" + channelUID + " cmd=" + command);
+        logger.info("ADAX handleCommand:" + channelUID + " cmd=" + command);
 
         // Note: if communication with thing fails for some reason,
         // indicate that by setting the status with detail information
@@ -70,7 +70,7 @@ public class AdaxRoomHandler extends BaseThingHandler {
 
             } else {
                 switch (channelUID.getId()) {
-                    case CHANNEL_ZONE_TARGET_TEMP: {
+                    case CHANNEL_ROOM_TARGET_TEMP: {
 
                         try {
                             Integer targetTemp = Integer.parseInt(command.toString());
@@ -83,8 +83,10 @@ public class AdaxRoomHandler extends BaseThingHandler {
 
                             updateState(channelUID, new DecimalType(targetTemp));
                         } catch (NumberFormatException e) {
+                            logger.error("error 2 ", e);
                             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
                         } catch (Exception ex) {
+                            logger.error("error 3 ", ex);
                             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, ex.getMessage());
                         }
 
@@ -93,6 +95,8 @@ public class AdaxRoomHandler extends BaseThingHandler {
                 }
             }
         } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("error 1 ", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
         }
     }
@@ -150,7 +154,7 @@ public class AdaxRoomHandler extends BaseThingHandler {
 
         if (room != null) {
 
-            logger.debug("z.getCurrentTemperature() = {} {} C={} T={}", getThing().getStatus(), room.getName(),
+            logger.debug("room.getCurrentTemperature() = {} {} C={} T={}", getThing().getStatus(), room.getName(),
                     room.getCurrentTemperature(), room.getTargetTemperature());
 
             if (getThing().getStatus() != ThingStatus.ONLINE) {
@@ -158,10 +162,10 @@ public class AdaxRoomHandler extends BaseThingHandler {
             }
 
             if (room.getCurrentTemperature() != null) {
-                updateState(CHANNEL_ZONE_CURRENT_TEMP, new DecimalType(room.getCurrentTemperature() / 100.0));
+                updateState(CHANNEL_ROOM_CURRENT_TEMP, new DecimalType(room.getCurrentTemperature() / 100.0));
             }
             if (room.getTargetTemperature() != null) {
-                updateState(CHANNEL_ZONE_TARGET_TEMP, new DecimalType(room.getTargetTemperature() / 100));
+                updateState(CHANNEL_ROOM_TARGET_TEMP, new DecimalType(room.getTargetTemperature() / 100));
             }
         }
     }

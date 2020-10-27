@@ -34,6 +34,6 @@ public class AdaxHeaterBindingConstants {
     public static final String PARAMETER_ROOM_NAME = "roomName";
 
     // List of all Channel ids
-    public final static String CHANNEL_ZONE_TARGET_TEMP = "roomTargetTemperature";
-    public final static String CHANNEL_ZONE_CURRENT_TEMP = "roomCurrentTemperature";
+    public final static String CHANNEL_ROOM_TARGET_TEMP = "roomTargetTemperature";
+    public final static String CHANNEL_ROOM_CURRENT_TEMP = "roomCurrentTemperature";
 }
