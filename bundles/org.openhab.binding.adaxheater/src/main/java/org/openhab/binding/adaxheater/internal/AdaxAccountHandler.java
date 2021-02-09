@@ -133,12 +133,12 @@ public class AdaxAccountHandler extends BaseBridgeHandler {
                 client = new AdaxClientApi(config.username, config.password, this.httpClient);
 
                 this.client = client;
-                logger.warn("************************************************  Initialized client.");
+                logger.debug("************************************************  Initialized client.");
             }
         }
 
         if (client != null && client.isApiAuthorized()) {
-            logger.warn("************************************************  Client is authenticated!");
+            logger.debug("************************************************  Client is authenticated!");
 
             updateStatus(ThingStatus.ONLINE);
         } else {

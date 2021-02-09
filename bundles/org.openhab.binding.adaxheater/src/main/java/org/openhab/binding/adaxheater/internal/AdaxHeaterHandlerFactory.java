@@ -12,7 +12,8 @@
  */
 package org.openhab.binding.adaxheater.internal;
 
-import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants.*;
+import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants.THING_TYPE_ACCOUNT;
+import static org.openhab.binding.adaxheater.internal.AdaxHeaterBindingConstants.THING_TYPE_ROOM;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.smarthome.core.auth.client.oauth2.OAuthFactory;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
@@ -45,7 +45,6 @@ import org.slf4j.LoggerFactory;
 @Component(configurationPid = "binding.adaxheater", service = ThingHandlerFactory.class)
 public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
 
-    private final OAuthFactory oAuthFactory;
     private final HttpClient httpClient;
     private Logger logger = LoggerFactory.getLogger(AdaxHeaterHandlerFactory.class);
 
@@ -57,9 +56,7 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
     }
 
     @Activate
-    public AdaxHeaterHandlerFactory(@Reference OAuthFactory oAuthFactory,
-            @Reference HttpClientFactory httpClientFactory) {
-        this.oAuthFactory = oAuthFactory;
+    public AdaxHeaterHandlerFactory(@Reference HttpClientFactory httpClientFactory) {
         httpClient = httpClientFactory.getCommonHttpClient();
     }
 
@@ -73,7 +70,7 @@ public class AdaxHeaterHandlerFactory extends BaseThingHandlerFactory {
     @Override
     protected ThingHandler createHandler(Thing thing) {
 
-        logger.info("Adax createHandler:{}", thing);
+        logger.debug("Adax createHandler:{}", thing);
 
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 

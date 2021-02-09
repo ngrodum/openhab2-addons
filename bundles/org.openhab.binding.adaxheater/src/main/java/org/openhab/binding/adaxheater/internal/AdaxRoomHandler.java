@@ -21,7 +21,6 @@ import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
@@ -52,80 +51,34 @@ public class AdaxRoomHandler extends BaseThingHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-
-        logger.info("ADAX handleCommand:" + channelUID + " cmd=" + command);
-
         // Note: if communication with thing fails for some reason,
         // indicate that by setting the status with detail information
         // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-        // "Could not control device at IP address x.x.x.x");
-
-        // handleCommand:adaxheater:zone:5584:zoneCurrentTemperature cmd=REFRESH
 
         try {
             if (command == RefreshType.REFRESH) {
-                // schedulePoller(0, true);
-
-                // updateZoneData(getBridgeHandler().getClient().getZone(zoneId));
 
             } else {
                 switch (channelUID.getId()) {
                     case CHANNEL_ROOM_TARGET_TEMP: {
 
-                        try {
-                            Integer targetTemp = Integer.parseInt(command.toString());
+                        Integer targetTemp = Integer.parseInt(command.toString());
 
-                            getBridgeHandler().getClient().setRoomTargetTemp(roomId, targetTemp * 100);
+                        getBridgeHandler().getClient().setRoomTargetTemp(roomId, targetTemp * 100);
 
-                            if (this.getThing().getStatus() != ThingStatus.ONLINE) {
-                                updateStatus(ThingStatus.ONLINE);
-                            }
-
-                            updateState(channelUID, new DecimalType(targetTemp));
-                        } catch (NumberFormatException e) {
-                            logger.error("error 2 ", e);
-                            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
-                        } catch (Exception ex) {
-                            logger.error("error 3 ", ex);
-                            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, ex.getMessage());
+                        if (this.getThing().getStatus() != ThingStatus.ONLINE) {
+                            updateStatus(ThingStatus.ONLINE);
                         }
 
-                        break;
+                        updateState(channelUID, new DecimalType(targetTemp));
                     }
+                        break;
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.error("error 1 ", e);
+            logger.error("Handlecommand error ", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
         }
-    }
-
-    @Override
-    public void initialize() {
-        // super.initialize();
-        // TODO: Initialize the thing. If done set status to ONLINE to indicate proper working.
-        // Long running initialization should be done asynchronously in background.
-
-        // UNKNOWN, ONLINE, OFFLINE or REMOVED allowed!
-        updateStatus(ThingStatus.UNKNOWN);
-
-        // Note: When initialization can NOT be done set the status with more details for further
-        // analysis. See also class ThingStatusDetail for all available status details.
-        // Add a description to give user information to understand why thing does not work
-        // as expected. E.g.
-        // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-        // "Can not access device as username and/or password are invalid");
-    }
-
-    /**
-     * If the bridge goes offline, cancels the polling and goes offline. If the bridge goes online, will attempt to
-     * re-initialize
-     */
-    @Override
-    public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
-        super.bridgeStatusChanged(bridgeStatusInfo);
-        // logger.info("bridgeStatusChanged " + bridgeStatusInfo);
     }
 
     private synchronized AdaxAccountHandler getBridgeHandler() {

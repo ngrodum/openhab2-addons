@@ -85,7 +85,7 @@ public class AdaxAccountPoller {
 
                     schedulePoller(POLL_INTERVAL_MS, true);
                 } else {
-                    logger.info("Polling");
+                    logger.debug("Polling");
                     refreshAllRooms();
                 }
             } catch (Exception e) {

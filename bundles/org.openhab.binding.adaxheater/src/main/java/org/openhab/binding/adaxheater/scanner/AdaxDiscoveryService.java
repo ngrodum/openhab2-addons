@@ -85,16 +85,15 @@ public class AdaxDiscoveryService extends AbstractDiscoveryService {
      */
     private void addZone(AdaxRoom room, ThingUID bridgeUID) {
 
-        logger.info("Adding room {} with id {}.", room.name, room.getRoomId());
+        logger.debug("Adding room {} with id {}.", room.name, room.getRoomId());
 
-        // uid must not contains dots
         ThingUID uid = new ThingUID(THING_TYPE_ROOM, "" + room.getRoomId());
 
         Map<String, Object> properties = new HashMap<>(1);
         properties.put(PARAMETER_ROOM_NAME, room.name);
 
         DiscoveryResult result = DiscoveryResultBuilder.create(uid).withBridge(bridgeUID).withProperties(properties)
-                .withLabel("Room " + room.name).build();
+                .withLabel("Adax Room " + room.name).build();
 
         thingDiscovered(result);
     }

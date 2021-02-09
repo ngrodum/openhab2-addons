@@ -57,13 +57,13 @@ public class AdaxClientApi {
         try {
             AdaxAccountData data = executeGet(API_URL + "/rest/v1/content/", AdaxAccountData.class);
 
-            logger.info("got data:" + data);
+            logger.debug("got data:" + data);
 
-            logger.info("got data rooms:" + data.rooms);
+            logger.debug("got data rooms:" + data.rooms);
 
-            logger.info("got data homes:" + data.homes);
+            logger.debug("got data homes:" + data.homes);
 
-            logger.info("got data devices:" + data.devices);
+            logger.debug("got data devices:" + data.devices);
 
             return data;
         } catch (IOException e) {
@@ -80,9 +80,11 @@ public class AdaxClientApi {
     public void setRoomTargetTemp(int roomId, int temp) {
         try {
             String payload = String.format("{ \"rooms\": [{ \"id\": %d, \"targetTemperature\": %d }] }", roomId, temp);
-            logger.info("setRoomTargetTemp:" + payload);
             AdaxSetTempResponse setTmp = executePost(API_URL + "/rest/v1/control/", payload, "application/json",
                     AdaxSetTempResponse.class);
+
+            logger.debug("setRoomTargetTemp: {}", gson.toJson(setTmp));
+
         } catch (IOException e) {
             e.printStackTrace();
         } catch (AuthenticationException e) {
@@ -99,7 +101,7 @@ public class AdaxClientApi {
 
                 accesstoken = getAccessToken(username, password);
 
-                logger.info("FRESH TOKEN EXPIRED??? " + hasTokenExpired(accesstoken, TOKEN_EXPIRES_IN_BUFFER_SECONDS));
+                logger.debug("FRESH TOKEN EXPIRED??? " + hasTokenExpired(accesstoken, TOKEN_EXPIRES_IN_BUFFER_SECONDS));
 
             }
         } catch (Exception e) {
@@ -149,11 +151,11 @@ public class AdaxClientApi {
 
             Date now = new Date();
             if (expiryDate.before(DateUtils.addSeconds(now, secondsBuffer))) {
-                logger.warn("Adax: API token expired, was valid until {}",
+                logger.debug("Adax: API token expired, was valid until {}",
                         DateFormat.getDateInstance().format(expiryDate));
                 return true;
             } else {
-                logger.info("Adax: API token still valid, valid until {}",
+                logger.debug("Adax: API token still valid, valid until {}",
                         DateFormat.getDateInstance().format(expiryDate));
             }
             return false;
@@ -168,7 +170,7 @@ public class AdaxClientApi {
             String payload = String.format("grant_type:password\n" + "password:%s\n" + "username:%s", password,
                     username);
 
-            logger.info("posting data:" + payload);
+            logger.debug("posting data:" + payload);
 
             Fields f = new Fields();
             f.add("grant_type", "password");
@@ -183,12 +185,12 @@ public class AdaxClientApi {
 
             AdaxGetTokenResponse data = gson.fromJson(response.getContentAsString(), AdaxGetTokenResponse.class);
 
-            logger.info("got data:" + data);
+            logger.debug("got data:" + data);
 
-            logger.info("got data rooms SHOULD NOT BE NULL!!!!:" + data.access_token);
-            logger.info("got data rooms:" + data.token_type);
-            logger.info("got data rooms:" + data.expires_in);
-            logger.info("got data rooms:" + data.refresh_token);
+            logger.debug("got data rooms SHOULD NOT BE NULL!!!!:" + data.access_token);
+            logger.debug("got data rooms:" + data.token_type);
+            logger.debug("got data rooms:" + data.expires_in);
+            logger.debug("got data rooms:" + data.refresh_token);
 
             return data.access_token;
         } catch (InterruptedException e) {
@@ -215,11 +217,11 @@ public class AdaxClientApi {
     private <T> T executeGet(final String url, final Class<T> clazz)
             throws IOException, AuthenticationException, AdaxClientApiException {
 
-        logger.error("Geting:" + url);
+        logger.debug("Geting:" + url);
 
         final ContentResponse response = request(httpClient.newRequest(url).method(HttpMethod.GET));
 
-        logger.error("Got content:" + response.getContentAsString());
+        logger.debug("Got content:" + response.getContentAsString());
 
         return gson.fromJson(response.getContentAsString(), clazz);
     }
@@ -227,12 +229,12 @@ public class AdaxClientApi {
     private <T> T executePost(final String url, final String data, final String contentType, final Class<T> clazz)
             throws IOException, AuthenticationException, AdaxClientApiException {
 
-        logger.error("Posting:" + url);
+        logger.debug("Posting:" + url);
 
         final ContentResponse response = request(httpClient.newRequest(url).method(HttpMethod.POST)
                 .content(new StringContentProvider(data), contentType));
 
-        logger.error("Got content:" + response.getContentAsString());
+        logger.debug("Got content:" + response.getContentAsString());
 
         return gson.fromJson(response.getContentAsString(), clazz);
     }
@@ -244,7 +246,7 @@ public class AdaxClientApi {
 
             isApiAuthorized();
 
-            logger.error("Using access token:" + accesstoken);
+            logger.debug("Using access token:" + accesstoken);
 
             response = request.header(HttpHeader.ACCEPT, CONTENT_TYPE)
                     .header(HttpHeader.AUTHORIZATION, BEARER + accesstoken)
@@ -283,7 +285,7 @@ public class AdaxClientApi {
                 logger.debug("Statuscode {} is NOT OK: [{}]", response.getStatus(), uri);
                 try {
                     content = response.getContentAsString();
-                    logger.trace("Response error content: {}", content);
+                    logger.debug("Response error content: {}", content);
                     // final ErrorResponse error = gson.fromJson(content, ErrorResponse.class);
 
                     logger.debug("Error unparsed JSON message, code: {} / message: {}", response.getStatus(),
